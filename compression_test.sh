@@ -221,7 +221,7 @@ function guetzli_test
   echo "Test_Image,Original_Size" >> guetzli-"$filename".csv
   echo "$filename","$orig_size" >> guetzli-"$filename".csv
   if [ "$only_csv" = false ]; then
-  parallel --will-cite 'guetzli --quality "{2}"  "{1}"  "{3}"_guetzli_q"{2}".jpg' ::: "$x" ::: {100..90} ::: "$filename"
+  parallel --will-cite 'guetzli --nomemlimit --quality "{2}"  "{1}"  "{3}"_guetzli_q"{2}".jpg' ::: "$x" ::: {100..90} ::: "$filename"
   fi
   echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> guetzli-"$filename".csv
   for ((i=100; i>=90; i--))
