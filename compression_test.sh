@@ -134,8 +134,7 @@ function plotcsv_graph
 	set datafile separator ","
 	set xtics font ", 12"
 	set arrow from $reference_jpg_size, graph 0 to $reference_jpg_size, graph 1 nohead lt 0
-	plot "webp-lossy-$2.csv" using 2:3 w lp ls 2 title 'webp-lossy', \
-    "pik-$2.csv" using 2:3 w lp ls 3 title 'pik', \
+	plot "pik-$2.csv" using 2:3 w lp ls 3 title 'pik', \
     "libjpeg-$2.csv" using 2:3 w lp ls 4 title 'libjpeg', \
     "guetzli-$2.csv" using 2:3 w lp ls 5 title 'guetzli', \
     "flif-lossy-$2.csv" using 2:3 w lp ls 6 title 'flif-lossy', \
@@ -143,6 +142,7 @@ function plotcsv_graph
 	"bpg-jctvc-$2.csv" using 2:3 w lp ls 8 title 'bpg(jctvc)', \
 	"mozjpeg-$2.csv" using 2:3 w lp ls 9 title 'MozJPEG', \
 	"webp-$2.csv" using 2:3 w lp ls 1 title 'webp-near-lossless-40/60', \
+	"webp-lossy-$2.csv" using 2:3 w lp ls 2 title 'webp-lossy', \
 	1/0 t "Reference Size" lt 0
 EOFMarker
 }
@@ -172,8 +172,7 @@ function plotcsv_graph_ssimulacra
 	set datafile separator ","
 	set xtics font ", 12"
 	set arrow from $reference_jpg_size, graph 0 to $reference_jpg_size, graph 1 nohead lt 0
-	plot "webp-lossy-$2.csv" using 2:4 w lp ls 2 title 'webp-lossy', \
-    "pik-$2.csv" using 2:4 w lp ls 3 title 'pik', \
+	plot "pik-$2.csv" using 2:4 w lp ls 3 title 'pik', \
     "libjpeg-$2.csv" using 2:4 w lp ls 4 title 'libjpeg', \
     "guetzli-$2.csv" using 2:4 w lp ls 5 title 'guetzli', \
     "flif-lossy-$2.csv" using 2:4 w lp ls 6 title 'flif-lossy', \
@@ -181,6 +180,7 @@ function plotcsv_graph_ssimulacra
 	"bpg-jctvc-$2.csv" using 2:4 w lp ls 8 title 'bpg(jctvc)', \
 	"mozjpeg-$2.csv" using 2:4 w lp ls 9 title 'MozJPEG', \
 	"webp-$2.csv" using 2:4 w lp ls 1 title 'webp-near-lossless-40/60', \
+	"webp-lossy-$2.csv" using 2:4 w lp ls 2 title 'webp-lossy', \
 	1/0 t "Reference Size" lt 0 
 EOFMarker
 }
