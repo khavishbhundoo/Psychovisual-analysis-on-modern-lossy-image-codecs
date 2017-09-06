@@ -122,9 +122,9 @@ function plotcsv_graph
     set style line 6 lt 1 lw 5 lc rgb '#ABDDA4' ps 0 # pale green
     set style line 7 lt 1 lw 5 lc rgb '#66C2A5' ps 0 # green
     set style line 8 lt 1 lw 5 lc rgb '#3288BD' ps 0 # blue
-	set style line 9 lt 1 lw 5 lc rgb '#6D32BD' ps 0 # purple  
+	set style line 9 lt 1 lw 5 lc rgb '#6D32BD' ps 0 # purple
     set tics nomirror
-	set ytics 1 
+	set ytics 1
 	set mytics 10
     set output "$1"
 	set title  "$3"
@@ -141,8 +141,8 @@ function plotcsv_graph
 	"bpg-$2.csv" using 2:3 w lp ls 7 title 'bpg(x265)', \
 	"bpg-jctvc-$2.csv" using 2:3 w lp ls 8 title 'bpg(jctvc)', \
 	"mozjpeg-$2.csv" using 2:3 w lp ls 9 title 'MozJPEG', \
-	"webp-$2.csv" using 2:3 w lp ls 1 title 'webp-near-lossless-40/60', \
 	"webp-lossy-$2.csv" using 2:3 w lp ls 2 title 'webp-lossy', \
+	"webp-$2.csv" using 2:3 w lp ls 1 title 'webp-near-lossless-40/60', \
 	1/0 t "Reference Size" lt 0
 EOFMarker
 }
@@ -160,7 +160,7 @@ function plotcsv_graph_ssimulacra
     set style line 6 lt 1 lw 5 lc rgb '#ABDDA4' ps 0 # pale green
     set style line 7 lt 1 lw 5 lc rgb '#66C2A5' ps 0 # green
     set style line 8 lt 1 lw 5 lc rgb '#3288BD' ps 0 # blue
-	set style line 9 lt 1 lw 5 lc rgb '#6D32BD' ps 0 # purple  
+	set style line 9 lt 1 lw 5 lc rgb '#6D32BD' ps 0 # purple
     set tics nomirror
 	set ytics 0.01
 	set mytics 10
@@ -181,7 +181,7 @@ function plotcsv_graph_ssimulacra
 	"mozjpeg-$2.csv" using 2:4 w lp ls 9 title 'MozJPEG', \
 	"webp-$2.csv" using 2:4 w lp ls 1 title 'webp-near-lossless-40/60', \
 	"webp-lossy-$2.csv" using 2:4 w lp ls 2 title 'webp-lossy', \
-	1/0 t "Reference Size" lt 0 
+	1/0 t "Reference Size" lt 0
 EOFMarker
 }
 
@@ -196,7 +196,7 @@ function libjpeg_test
   echo "$filename","$orig_size" >> libjpeg-"$filename".csv
   echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> libjpeg-"$filename".csv
   if [ "$only_csv" = false ]; then
-  parallel --will-cite 'convert "{1}" -quality "{2}" -sampling-factor 1x1 "{3}"_libjpeg_q"{2}".jpg' ::: "$x" ::: {100..70} ::: "$filename"
+    parallel --will-cite 'convert "{1}" -quality "{2}" -sampling-factor 1x1 "{3}"_libjpeg_q"{2}".jpg' ::: "$x" ::: {100..70} ::: "$filename"
   fi
   for ((i=100; i>=70; i--))
   do
@@ -221,7 +221,7 @@ function guetzli_test
   echo "Test_Image,Original_Size" >> guetzli-"$filename".csv
   echo "$filename","$orig_size" >> guetzli-"$filename".csv
   if [ "$only_csv" = false ]; then
-  parallel --will-cite 'guetzli --nomemlimit --quality "{2}"  "{1}"  "{3}"_guetzli_q"{2}".jpg' ::: "$x" ::: {100..90} ::: "$filename"
+    parallel --will-cite 'guetzli --nomemlimit --quality "{2}"  "{1}"  "{3}"_guetzli_q"{2}".jpg' ::: "$x" ::: {100..90} ::: "$filename"
   fi
   echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> guetzli-"$filename".csv
   for ((i=100; i>=90; i--))
@@ -248,8 +248,8 @@ function pik_test
   echo "$filename","$orig_size" >> pik-"$filename".csv
   echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> pik-"$filename".csv
   if [ "$only_csv" = false ]; then
-  parallel --will-cite 'cpik "{1}"  "{2}"  "{3}"_q"{2}".pik' ::: "$x" ::: $(seq 0.5 0.1 3.0) ::: "$filename"
-  parallel --will-cite 'dpik "{1}"_q"{2}".pik  "{1}"_pik_q"{2}".png ' ::: "$filename" ::: $(seq 0.5 0.1 3.0)
+    parallel --will-cite 'cpik "{1}"  "{2}"  "{3}"_q"{2}".pik' ::: "$x" ::: $(seq 0.5 0.1 3.0) ::: "$filename"
+    parallel --will-cite 'dpik "{1}"_q"{2}".pik  "{1}"_pik_q"{2}".png ' ::: "$filename" ::: $(seq 0.5 0.1 3.0)
   fi
   for i in $(seq 0.5 0.1 3.0)
   do
@@ -277,8 +277,8 @@ function webp_near_lossless
   echo "$filename","$orig_size" >> webp-"$filename".csv
   echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> webp-"$filename".csv
   if [ "$only_csv" = false ]; then
-  parallel --will-cite 'cwebp -sharp_yuv -pass 10 -mt -quiet -near_lossless "{1}" -q 100 -m 6 "{2}"  -o "{3}"_webp_q{1}.webp' ::: 60 40 ::: "$x" ::: "$filename"
-  parallel --will-cite 'dwebp -quiet "{1}"_webp_q"{2}".webp -o "{1}"_webp_q"{2}".png' ::: "$filename" ::: 60 40
+    parallel --will-cite 'cwebp -sharp_yuv -pass 10 -mt -quiet -near_lossless "{1}" -q 100 -m 6 "{2}"  -o "{3}"_webp_q{1}.webp' ::: 60 40 ::: "$x" ::: "$filename"
+    parallel --will-cite 'dwebp -quiet "{1}"_webp_q"{2}".webp -o "{1}"_webp_q"{2}".png' ::: "$filename" ::: 60 40
   fi
   for ((i=40; i<=60; i += 20))
   do
@@ -308,8 +308,8 @@ function webp_lossy
   echo "$filename","$orig_size" >> webp-lossy-"$filename".csv
   echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> webp-lossy-"$filename".csv
   if [ "$only_csv" = false ]; then
-  parallel  --will-cite 'cwebp -sharp_yuv -pass 10  -mt -quiet -q "{1}" -m 6 "{2}"  -o "{3}"_webp_lossy_q"{1}".webp' ::: {100..70}  ::: "$x" ::: "$filename"
-  parallel  --will-cite 'dwebp -mt -quiet "{1}"_webp_lossy_q{2}.webp -o "{1}"_webp_lossy_q{2}.png' ::: "$filename" ::: {100..70}
+    parallel  --will-cite 'cwebp -sharp_yuv -pass 10  -mt -quiet -q "{1}" -m 6 "{2}"  -o "{3}"_webp_lossy_q"{1}".webp' ::: {100..70}  ::: "$x" ::: "$filename"
+    parallel  --will-cite 'dwebp -mt -quiet "{1}"_webp_lossy_q{2}.webp -o "{1}"_webp_lossy_q{2}.png' ::: "$filename" ::: {100..70}
   fi
   for ((i=100; i>=70; i--))
   do
@@ -337,8 +337,8 @@ function bpg_lossy
   echo "$filename","$orig_size" >> bpg-"$filename".csv
   echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> bpg-"$filename".csv
   if [ "$only_csv" = false ]; then
-  parallel --will-cite 'bpgenc -q "{1}" -f 444  -m 9 "{2}" -o "{3}"_bpg_q{1}.bpg' ::: {0..37}  ::: "$x" ::: "$filename"
-  parallel --will-cite 'bpgdec "{1}"_bpg_q"{2}".bpg -o "{1}"_bpg_q{2}.png' ::: "$filename" ::: {0..37}
+    parallel --will-cite 'bpgenc -q "{1}" -f 444  -m 9 "{2}" -o "{3}"_bpg_q{1}.bpg' ::: {0..37}  ::: "$x" ::: "$filename"
+    parallel --will-cite 'bpgdec "{1}"_bpg_q"{2}".bpg -o "{1}"_bpg_q{2}.png' ::: "$filename" ::: {0..37}
   fi
   for ((i=0; i<=37; i++))
   do
@@ -366,8 +366,8 @@ function bpg_lossy_jctvc
   echo "$filename","$orig_size" >> bpg-jctvc-"$filename".csv
   echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> bpg-jctvc-"$filename".csv
   if [ "$only_csv" = false ]; then
-  parallel --will-cite 'bpgenc -q "{1}" -f 444  -m 9 -e jctvc "{2}" -o "{3}"_bpg_jctvc_q{1}.bpg' ::: {0..37}  ::: "$x" ::: "$filename"
-  parallel --will-cite 'bpgdec "{1}"_bpg_jctvc_q"{2}".bpg -o "{1}"_bpg_jctvc_q{2}.png' ::: "$filename" ::: {0..37}
+    parallel --will-cite 'bpgenc -q "{1}" -f 444  -m 9 -e jctvc "{2}" -o "{3}"_bpg_jctvc_q{1}.bpg' ::: {0..37}  ::: "$x" ::: "$filename"
+    parallel --will-cite 'bpgdec "{1}"_bpg_jctvc_q"{2}".bpg -o "{1}"_bpg_jctvc_q{2}.png' ::: "$filename" ::: {0..37}
   fi
   for ((i=0; i<=37; i++))
   do
@@ -395,8 +395,8 @@ function flif_lossy
   echo "$filename","$orig_size" >> flif-lossy-"$filename".csv
   echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> flif-lossy-"$filename".csv
   if [ "$only_csv" = false ]; then
-  parallel --will-cite 'flif --overwrite -e -E100 -Q"{1}"  "{2}" "{3}"_lossy_q"{1}".flif' ::: {100..0}  ::: "$x" ::: "$filename"
-  parallel --will-cite 'flif -d "{1}"_lossy_q"{2}".flif "{1}"_flif_lossy_q{2}.png' ::: "$filename" ::: {100..0}
+    parallel --will-cite 'flif --overwrite -e -E100 -Q"{1}"  "{2}" "{3}"_lossy_q"{1}".flif' ::: {100..0}  ::: "$x" ::: "$filename"
+    parallel --will-cite 'flif -d "{1}"_lossy_q"{2}".flif "{1}"_flif_lossy_q{2}.png' ::: "$filename" ::: {100..0}
   fi
   for ((i=100; i>=0; i--))
   do
@@ -424,7 +424,7 @@ function mozjpeg_test
   echo "$filename","$orig_size" >> mozjpeg-"$filename".csv
   echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> mozjpeg-"$filename".csv
   if [ "$only_csv" = false ]; then
-  parallel --will-cite 'cjpeg -optimize -dc-scan-opt 2 -sample 1x1 -quality "{1}" -outfile "{2}"_mozjpeg_q{1}.jpg {3}' ::: {100..70}  ::: "$filename" ::: "$x"
+    parallel --will-cite 'cjpeg -optimize -dc-scan-opt 2 -sample 1x1 -quality "{1}" -outfile "{2}"_mozjpeg_q{1}.jpg {3}' ::: {100..70}  ::: "$filename" ::: "$x"
   fi
   for ((i=100; i>=70; i--))
   do
@@ -492,7 +492,7 @@ function main
       if [ "${x: 0:2}" != "--" ]; then
         continue
       fi
-	  
+
 
       if [ "$x" == "--only-libjpeg" ]; then
         only_libjpeg=true
@@ -534,18 +534,18 @@ function main
         only_mozjpeg=true
         break
       fi
-	  
-	  
-	  if [ "$x" == "--only-plots" ]; then
+
+
+      if [ "$x" == "--only-plots" ]; then
         only_plots=true
         break
       fi
-	  
-	  if [ "$x" == "--only-csv" ]; then
+
+      if [ "$x" == "--only-csv" ]; then
         only_csv=true
         break
       fi
-	  	  
+
 
     done
 
@@ -598,16 +598,16 @@ function main
     if [ "$only_flif_lossy" = true ] || [ "$only_csv" = true ] || [ "$has_options" = false ]; then
       flif_lossy
     fi
-	
-	if [ "$only_plots" = true ] || [ "$only_csv" = true ] || [ "$has_options" = false ]; then
-	  #plot the gragh
-    echo "Generating the plots[Source :$x]"
-    rm -rf "$filename"_butteraugli_plot.png "$filename"_ssimulacra_plot.png
-    plotcsv_graph "$filename"_butteraugli_plot.png "$filename"  "Source: $filename"  
-    plotcsv_graph_ssimulacra "$filename"_ssimulacra_plot.png  "$filename" "Source: $filename" 
-    files_to_zip+="libjpeg-${filename}.csv guetzli-${filename}.csv pik-${filename}.csv webp-${filename}.csv webp-lossy-${filename}.csv  bpg-${filename}.csv flif-lossy-${filename}.csv mozjpeg-${filename}.csv bpg-jctvc-${filename}.csv ${filename}_butteraugli_plot.png ${filename}_ssimulacra_plot.png "
+
+    if [ "$only_plots" = true ] || [ "$only_csv" = true ] || [ "$has_options" = false ]; then
+      #plot the gragh
+      echo "Generating the plots[Source :$x]"
+      rm -rf "$filename"_butteraugli_plot.png "$filename"_ssimulacra_plot.png
+      plotcsv_graph "$filename"_butteraugli_plot.png "$filename"  "Source: $filename"
+      plotcsv_graph_ssimulacra "$filename"_ssimulacra_plot.png  "$filename" "Source: $filename"
+      files_to_zip+="libjpeg-${filename}.csv guetzli-${filename}.csv pik-${filename}.csv webp-${filename}.csv webp-lossy-${filename}.csv  bpg-${filename}.csv flif-lossy-${filename}.csv mozjpeg-${filename}.csv bpg-jctvc-${filename}.csv ${filename}_butteraugli_plot.png ${filename}_ssimulacra_plot.png "
     fi
-	
+
   done
 
 
