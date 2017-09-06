@@ -167,7 +167,7 @@ function plotcsv_graph_ssimulacra
     set output "$1"
 	set title  "$3"
     set xlabel 'bytesize'
-    set ylabel 'butteraugli score'
+    set ylabel 'ssimulacra score'
 	set style func linespoints
 	set datafile separator ","
 	set xtics font ", 12"
