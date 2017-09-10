@@ -7,6 +7,7 @@
 # Performs compression tests using multiple encoders#
 #####################################################
 
+#TODO : Taking a butteraugli score of 1.0 as a reference, generate a heatmap of each codec that is just above that byte size
 
 function exists()
 {
@@ -27,7 +28,7 @@ function usage()
   echo "--only-bpg-lossy-jctvc  Redo the test[image generation + csv ] only for bgp(lossy) and regenerate plots"
   echo "--only-mozjpeg          Redo the test[image generation + csv ] only for mozjpeg and regenerate plots"
   echo "--only-plots            Only regenerate plots"
-  echo "--only-csv              Only regenerate csv files and plots"
+  echo "--only-csv              Only regenerate csv files and plots"        
   exit 1
 
 }
@@ -225,10 +226,10 @@ function guetzli_test
   echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> guetzli-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating JPEGs optimized by Guetzli(This will take a while...BE patient)[Source :$x] in parallel"
-    parallel --will-cite 'guetzli --nomemlimit --quality "{2}"  "{1}"  "{3}"_guetzli_q"{2}".jpg' ::: "$x" ::: {100..90} ::: "$filename"
+    parallel --will-cite 'guetzli --nomemlimit --quality "{2}"  "{1}"  "{3}"_guetzli_q"{2}".jpg' ::: "$x" ::: {100..84} ::: "$filename"
   fi
   echo "Perform comparisions and store results in guetzli-$filename.csv"
-  for ((i=100; i>=90; i--))
+  for ((i=100; i>=84; i--))
   do
     #guetzli --quality "$i"  "$x"  "$filename"_guetzli_q"$i".jpg
     new_size=$(wc -c < "$filename"_guetzli_q"$i".jpg)
@@ -351,7 +352,7 @@ function webp_lossy
   echo "Perform comparisions and store results in webp-lossy-$filename.csv"
   for ((i=100; i>=70; i--))
   do
-    #cwebp -sharp_yuv -mt -quiet -q "$i" -m 6 "$x"  -o "$filename"_webp_lossy_q"$i".webp
+    #cwebp -sharp_yuv -pass 10 -mt -quiet -q "$i" -m 6 "$x"  -o "$filename"_webp_lossy_q"$i".webp
     #convert to png to allow comparision
     #dwebp -quiet "$filename"_webp_lossy_q"$i".webp -o "$filename"_webp_lossy_q"$i".png
     new_size=$(wc -c < "$filename"_webp_lossy_q"$i".webp)
