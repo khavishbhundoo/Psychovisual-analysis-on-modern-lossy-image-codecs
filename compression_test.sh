@@ -313,7 +313,7 @@ function webp_near_lossless
   echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> webp-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating Webp images(Near Lossless)[Source :$x] in parallel"
-    parallel --will-cite 'cwebp -sharp_yuv -pass 10 -mt -quiet -near_lossless "{1}" -q 100 -m 6 "{2}"  -o "{3}"_webp_q{1}.webp' ::: 60 40 ::: "$x" ::: "$filename"
+    parallel --will-cite 'cwebp -sharp_yuv -mt -quiet -near_lossless "{1}" -q 100 -m 6 "{2}"  -o "{3}"_webp_q{1}.webp' ::: 60 40 ::: "$x" ::: "$filename"
     parallel --will-cite 'dwebp -quiet "{1}"_webp_q"{2}".webp -o "{1}"_webp_q"{2}".png' ::: "$filename" ::: 60 40
   fi
   echo "Perform comparisions and store results in webp-$filename.csv"
@@ -346,7 +346,7 @@ function webp_lossy
   echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> webp-lossy-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating Webp images(Lossy)[Source :$x] in parallel"
-    parallel  --will-cite 'cwebp -sharp_yuv -pass 10  -mt -quiet -q "{1}" -m 6 "{2}"  -o "{3}"_webp_lossy_q"{1}".webp' ::: {100..70}  ::: "$x" ::: "$filename"
+    parallel  --will-cite 'cwebp -sharp_yuv   -mt -quiet -q "{1}" -m 6 "{2}"  -o "{3}"_webp_lossy_q"{1}".webp' ::: {100..70}  ::: "$x" ::: "$filename"
     parallel  --will-cite 'dwebp -mt -quiet "{1}"_webp_lossy_q{2}.webp -o "{1}"_webp_lossy_q{2}.png' ::: "$filename" ::: {100..70}
   fi
   echo "Perform comparisions and store results in webp-lossy-$filename.csv"
