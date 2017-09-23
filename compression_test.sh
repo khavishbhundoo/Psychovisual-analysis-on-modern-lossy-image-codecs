@@ -72,6 +72,11 @@ function check_dependancies()
     echo 'bc is not installed...exiting'
     missing_deps=true
   fi
+  
+  if ! exists jpeg; then
+    echo 'libjpeg is not installed...exiting'
+    missing_deps=true
+  fi
 
   if ! exists gnuplot; then
     echo 'gnuplot is not installed...exiting'
@@ -198,12 +203,14 @@ function libjpeg_test
   echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> libjpeg-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating JPEGs optimized by LibJPEG[Source :$x] in parallel"
-    parallel --will-cite 'convert "{1}" -quality "{2}" -sampling-factor 1x1 "{3}"_libjpeg_q"{2}".jpg' ::: "$x" ::: {100..70} ::: "$filename"
+    #parallel --will-cite 'convert "{1}" -quality "{2}" -sampling-factor 1x1 "{3}"_libjpeg_q"{2}".jpg' ::: "$x" ::: {100..70} ::: "$filename"
+     parallel --will-cite 'jpeg -q "{1}" -oz  -qt 2 -h "{2}".ppm "{3}"_libjpeg_q"{1}".jpg' ::: {100..70} ::: "$x" ::: "$filename"
   fi
   echo "Perform comparisions and store results in libjpeg-$filename.csv"
   for ((i=100; i>=70; i--))
   do
     #convert "$x" -quality "$i" -sampling-factor 1x1 "$filename"_libjpeg_q"$i".jpg
+    #jpeg -q "$i" -oz -v -qt 2 -h  "$x".ppm "$filename"_libjpeg_q"$i".jpg
     new_size=$(wc -c < "$filename"_libjpeg_q"$i".jpg)
     butteraugli_score=$(butteraugli "$x" "$filename"_libjpeg_q"$i".jpg)
     ssimulacra_score=$(ssimulacra "$x" "$filename"_libjpeg_q"$i".jpg)
@@ -580,7 +587,8 @@ function main
     fi
     filename=$(basename "$x")
     orig_size=$(wc -c < "$x")
-    convert "$x" -quality 93 "$filename"_libjpeg_reference.jpg
+    convert "$x" -quality 93 -sampling-factor 1x1  "$filename"_libjpeg_reference.jpg
+    convert "$x" "$x".ppm # libjpeg will require ppm file as input
     reference_jpg_size=$(wc -c < "$filename"_libjpeg_reference.jpg)
 
 
