@@ -375,11 +375,11 @@ function pik_test
   echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> pik-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating Pik images(This will take a while...BE patient)[Source :$x] in parallel"
-    parallel --will-cite 'cpik "{1}" "{3}"_q"{2}".pik --distance "{2}"' ::: "$x" ::: $(seq 0.6 0.1 3.0) ::: "$filename"
-    parallel --will-cite 'dpik "{1}"_q"{2}".pik  "{1}"_pik_q"{2}".png ' ::: "$filename" ::: $(seq 0.6 0.1 3.0)
+    parallel --will-cite 'cpik "{1}" "{3}"_q"{2}".pik --distance "{2}"' ::: "$x" ::: $(seq 0.5 0.1 3.0) ::: "$filename"
+    parallel --will-cite 'dpik "{1}"_q"{2}".pik  "{1}"_pik_q"{2}".png ' ::: "$filename" ::: $(seq 0.5 0.1 3.0)
   fi
   echo "Perform comparisions and store results in pik-$filename.csv"
-  for i in $(seq 0.6 0.1 3.0)
+  for i in $(seq 0.5 0.1 3.0)
   do
     #cpik  "$x" "$filename"_q"$i".pik --distance "$i"
     new_size=$(wc -c < "$filename"_q"$i".pik)
