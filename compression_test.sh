@@ -20,6 +20,7 @@ function usage()
   echo "Main Options"
   echo "--only-pik              Redo the test[image generation + csv ] only for pik and regenerate plots"
   echo "--only-libjpeg          Redo the test[image generation + csv ] only for libjpeg and regenerate plots"
+  echo "--only-libjpeg-2000     Redo the test[image generation + csv ] only for libjpeg 2000 and regenerate plots"
   echo "--only-guetzli          Redo the test[image generation + csv ] only for guezli and regenerate plots"
   echo "--only-flif-lossy       Redo the test[image generation + csv ] only for flif(lossy) and regenerate plots"
   echo "--only-webp             Redo the test[image generation + csv ] only for webp(near-lossless) and regenerate plots"
@@ -27,11 +28,13 @@ function usage()
   echo "--only-bpg-lossy        Redo the test[image generation + csv ] only for bgp(lossy) and regenerate plots"
   echo "--only-bpg-lossy-jctvc  Redo the test[image generation + csv ] only for bgp(lossy) and regenerate plots"
   echo "--only-mozjpeg          Redo the test[image generation + csv ] only for mozjpeg and regenerate plots"
+  echo "--only-av1              Redo the test[image generation + csv ] only for av1 and regenerate plots"
   echo "--only-plots            Only regenerate plots"
-  echo "--only-csv              Only regenerate csv files and plots"        
+  echo "--only-csv              Only regenerate csv files and plots"
   exit 1
 
 }
+
 
 function check_dependancies()
 {
@@ -64,7 +67,12 @@ function check_dependancies()
   fi
 
   if ! exists cwebp || ! exists dwebp ; then
-    echo 'Pik is not installed...exiting'
+    echo 'Webp is not installed...exiting'
+    missing_deps=true
+  fi
+
+  if ! exists aomenc || ! exists dwebp ; then
+    echo 'av1 is not installed...exiting'
     missing_deps=true
   fi
 
@@ -72,9 +80,14 @@ function check_dependancies()
     echo 'bc is not installed...exiting'
     missing_deps=true
   fi
-  
+
   if ! exists jpeg; then
     echo 'libjpeg is not installed...exiting'
+    missing_deps=true
+  fi
+
+  if ! exists opj_compress || ! exists opj_decompress ; then
+    echo 'OpenJPEG is not installed...exiting'
     missing_deps=true
   fi
 
@@ -129,6 +142,8 @@ function plotcsv_graph
     set style line 7 lt 1 lw 5 lc rgb '#66C2A5' ps 0 # green
     set style line 8 lt 1 lw 5 lc rgb '#3288BD' ps 0 # blue
 	set style line 9 lt 1 lw 5 lc rgb '#6D32BD' ps 0 # purple
+	set style line 10 lt 1 lw 5 lc rgb '#77776e' ps 0 # grey
+    set style line 11 lt 1 lw 5 lc rgb '#914d8f' ps 0 # pink
     set tics nomirror
 	set ytics 1
 	set mytics 10
@@ -142,11 +157,13 @@ function plotcsv_graph
 	set arrow from $reference_jpg_size, graph 0 to $reference_jpg_size, graph 1 nohead lt 0
 	plot "pik-$2.csv" using 2:3 w lp ls 3 title 'pik', \
     "libjpeg-$2.csv" using 2:3 w lp ls 4 title 'libjpeg', \
+	"libjpeg-2000-$2.csv" using 2:3 w lp ls 10 title 'JPEG 2000', \
     "guetzli-$2.csv" using 2:3 w lp ls 5 title 'guetzli', \
     "flif-lossy-$2.csv" using 2:3 w lp ls 6 title 'flif-lossy', \
 	"bpg-$2.csv" using 2:3 w lp ls 7 title 'bpg(x265)', \
 	"bpg-jctvc-$2.csv" using 2:3 w lp ls 8 title 'bpg(jctvc)', \
 	"mozjpeg-$2.csv" using 2:3 w lp ls 9 title 'MozJPEG', \
+	"av1-$2.csv" using 3:4 w lp ls 11 title 'AV1', \
 	"webp-$2.csv" using 2:3 w lp ls 1 title 'webp-near-lossless-40/60', \
 	"webp-lossy-$2.csv" using 2:3 w lp ls 2 title 'webp-lossy', \
 	1/0 t "Reference Size" lt 0
@@ -167,6 +184,8 @@ function plotcsv_graph_ssimulacra
     set style line 7 lt 1 lw 5 lc rgb '#66C2A5' ps 0 # green
     set style line 8 lt 1 lw 5 lc rgb '#3288BD' ps 0 # blue
 	set style line 9 lt 1 lw 5 lc rgb '#6D32BD' ps 0 # purple
+	set style line 10 lt 1 lw 5 lc rgb '#77776e' ps 0 # grey
+    set style line 11 lt 1 lw 5 lc rgb '#914d8f' ps 0 # pink
     set tics nomirror
 	set ytics 0.01
 	set mytics 10
@@ -180,11 +199,13 @@ function plotcsv_graph_ssimulacra
 	set arrow from $reference_jpg_size, graph 0 to $reference_jpg_size, graph 1 nohead lt 0
 	plot "pik-$2.csv" using 2:4 w lp ls 3 title 'pik', \
     "libjpeg-$2.csv" using 2:4 w lp ls 4 title 'libjpeg', \
+	"libjpeg-2000-$2.csv" using 2:4 w lp ls 10 title 'JPEG 2000', \
     "guetzli-$2.csv" using 2:4 w lp ls 5 title 'guetzli', \
     "flif-lossy-$2.csv" using 2:4 w lp ls 6 title 'flif-lossy', \
 	"bpg-$2.csv" using 2:4 w lp ls 7 title 'bpg(x265)', \
 	"bpg-jctvc-$2.csv" using 2:4 w lp ls 8 title 'bpg(jctvc)', \
 	"mozjpeg-$2.csv" using 2:4 w lp ls 9 title 'MozJPEG', \
+	"av1-$2.csv" using 3:5 w lp ls 11 title 'AV1', \
 	"webp-$2.csv" using 2:4 w lp ls 1 title 'webp-near-lossless-40/60', \
 	"webp-lossy-$2.csv" using 2:4 w lp ls 2 title 'webp-lossy', \
 	1/0 t "Reference Size" lt 0
@@ -203,12 +224,14 @@ function libjpeg_test
   echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> libjpeg-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating JPEGs optimized by LibJPEG[Source :$x] in parallel"
+    #ImageMagick uses an old version of libjpeg so i take the latest one from github for accuracy
     #parallel --will-cite 'convert "{1}" -quality "{2}" -sampling-factor 1x1 "{3}"_libjpeg_q"{2}".jpg' ::: "$x" ::: {100..70} ::: "$filename"
-     parallel --will-cite 'jpeg -q "{1}" -oz  -qt 2 -h "{2}".ppm "{3}"_libjpeg_q"{1}".jpg' ::: {100..70} ::: "$x" ::: "$filename"
+    parallel --will-cite 'jpeg -q "{1}" -oz  -qt 3 -qv -h "{2}".ppm "{3}"_libjpeg_q"{1}".jpg' ::: {100..70} ::: "$x" ::: "$filename"
   fi
   echo "Perform comparisions and store results in libjpeg-$filename.csv"
   for ((i=100; i>=70; i--))
   do
+    #ImageMagick uses an old version of libjpeg so i take the latest one from github for accuracy
     #convert "$x" -quality "$i" -sampling-factor 1x1 "$filename"_libjpeg_q"$i".jpg
     #jpeg -q "$i" -oz -v -qt 2 -h  "$x".ppm "$filename"_libjpeg_q"$i".jpg
     new_size=$(wc -c < "$filename"_libjpeg_q"$i".jpg)
@@ -219,6 +242,69 @@ function libjpeg_test
     printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
     printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
     echo "$i","$new_size","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> libjpeg-"$filename".csv
+  done
+#End csv generation
+}
+
+#need to complete
+function av1_test
+{
+  echo "Analysing images optimized by AV1"
+  rm -rf av1-"$filename".csv "$x".y4m
+  ffmpeg -nostats -loglevel 0 -y -i  "$x" -pix_fmt yuv444p10le -strict -2 "$x".y4m
+  width=$(identify -format "%w" "$x")
+  height=$(identify -format "%h" "$x")
+  #Start csv generation
+  echo "Test_Image,Original_Size" >> av1-"$filename".csv
+  echo "$filename","$orig_size" >> av1-"$filename".csv
+  echo "Quality(cq-level),Flatness(qm-min),Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> av1-"$filename".csv
+  for q in 10 12 14 16 18 20 22 24 26 28 30; do
+    for i in 4 6 8 10 12; do
+      if [ "$only_csv" = false ]; then
+        aomenc "$x".y4m --i444 --enable-qm=1 --qm-min="$i" --profile=3 -w "$width" -h "$height" -b 10 --end-usage=q --cq-level="$q" -o "$x"_"$i"_"$q".ivf
+        aomdec "$x"_"$i"_"$q".ivf --output-bit-depth=10 -o "$x"_"$i"_"$q".y4m
+        ffmpeg -nostats -loglevel 0 -y -i "$x"_"$i"_"$q".y4m "$x"_"$i"_"$q".png
+        convert "$x"_"$i"_"$q".png PNG24:"$x"_"$i"_"$q"_ssimulacra.png # ssimulacra can't handle generated png
+      fi
+      new_size=$(wc -c < "$x"_"$i"_"$q".ivf)
+      butteraugli_score=$(butteraugli "$x" "$x"_"$i"_"$q".png)
+      ssimulacra_score=$(ssimulacra "$x" "$x"_"$i"_"$q"_ssimulacra.png)
+      compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
+      reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
+      printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
+      printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
+      echo "$q","$i","$new_size","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> av1-"$filename".csv
+    done
+  done
+#End csv generation
+}
+
+function libjpeg_2000_test
+{
+  echo "Analysing JPEG 2000 images optimized by OpenJPEG(JPEG 2000)[Source :$x]"
+  rm -rf libjpeg-2000-"$filename".csv
+  #Start csv generation
+  echo "Test_Image,Original_Size" >> libjpeg-2000-"$filename".csv
+  echo "$filename","$orig_size" >> libjpeg-2000-"$filename".csv
+  echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> libjpeg-2000-"$filename".csv
+  if [ "$only_csv" = false ]; then
+    echo "Generating JPEG 2000 images optimized by LibJPEG[Source :$x] in parallel"
+    parallel --will-cite 'opj_compress -i "{1}".ppm -r "{2}" -o "{3}"_openjpeg_q"{2}".jp2 -I -r "{2}"' ::: "$x" ::: {0..25}  ::: "$filename"
+    parallel --will-cite 'opj_decompress -i "{3}"_openjpeg_q"{2}".jp2  -o "{3}"_openjpeg_q"{2}".png' ::: "$x" ::: {0..25}  ::: "$filename"
+  fi
+  echo "Perform comparisions and store results in libjpeg-2000-$filename.csv"
+  for ((i=0; i<=25; i++))
+  do
+    #opj_compress -i "$x".ppm -r "$i" -o "$filename"_openjpeg_q"$i".jp2 -I -r "$i"
+    #opj_decompress -i "$filename"_openjpeg_q"$i".jp2  -o "$filename"_openjpeg_q"$i".png
+    new_size=$(wc -c < "$filename"_openjpeg_q"$i".jp2)
+    butteraugli_score=$(butteraugli "$x" "$filename"_openjpeg_q"$i".png)
+    ssimulacra_score=$(ssimulacra "$x" "$filename"_openjpeg_q"$i".png)
+    compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
+    reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
+    printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
+    printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
+    echo "$i","$new_size","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> libjpeg-2000-"$filename".csv
   done
 #End csv generation
 }
@@ -289,11 +375,11 @@ function pik_test
   echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> pik-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating Pik images(This will take a while...BE patient)[Source :$x] in parallel"
-    parallel --will-cite 'cpik "{1}"  "{2}"  "{3}"_q"{2}".pik' ::: "$x" ::: $(seq 0.5 0.1 3.0) ::: "$filename"
-    parallel --will-cite 'dpik "{1}"_q"{2}".pik  "{1}"_pik_q"{2}".png ' ::: "$filename" ::: $(seq 0.5 0.1 3.0)
+    parallel --will-cite 'cpik "{1}"  "{2}"  "{3}"_q"{2}".pik' ::: "$x" ::: $(seq 0.6 0.1 3.0) ::: "$filename"
+    parallel --will-cite 'dpik "{1}"_q"{2}".pik  "{1}"_pik_q"{2}".png ' ::: "$filename" ::: $(seq 0.6 0.1 3.0)
   fi
   echo "Perform comparisions and store results in pik-$filename.csv"
-  for i in $(seq 0.5 0.1 3.0)
+  for i in $(seq 0.6 0.1 3.0)
   do
     #cpik  "$x" "$i"  "$filename"_q"$i".pik
     new_size=$(wc -c < "$filename"_q"$i".pik)
@@ -303,7 +389,7 @@ function pik_test
     ssimulacra_score=$(ssimulacra "$x" "$filename"_pik_q"$i".png)
     compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
     reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
-    printf -v compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
+    printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
     printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
     echo "$i","$new_size","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> pik-"$filename".csv
   done
@@ -495,7 +581,9 @@ function main
 #check which  flags are used
   has_options=false
   only_pik=false
+  only_av1=false
   only_libjpeg=false
+  only_libjpeg_2000=false
   only_guetzli=false
   only_webp=false
   only_webp_lossy=false
@@ -524,54 +612,69 @@ function main
 
       if [ "$x" == "--only-libjpeg" ]; then
         only_libjpeg=true
-        break
+        continue
+      fi
+
+      if [ "$x" == "--only-libjpeg-2000" ]; then
+        only_libjpeg_2000=true
+        continue
       fi
 
       if [ "$x" == "--only-guetzli" ]; then
         only_guetzli=true
-        break
+        continue
       fi
 
       if [ "$x" == "--only-pik" ]; then
         only_pik=true
-        break
+        continue
+      fi
+
+      if [ "$x" == "--only-av1" ]; then
+        only_av1=true
+        continue
       fi
 
       if [ "$x" == "--only-webp" ]; then
         only_webp=true
-        break
+        continue
       fi
 
       if [ "$x" == "--only-flif-lossy" ]; then
         only_flif_lossy=true
-        break
+        continue
       fi
 
       if [ "$x" == "--only-webp-lossy" ]; then
         only_webp_lossy=true
-        break
+        continue
       fi
 
       if [ "$x" == "--only-bpg-lossy-jctvc" ]; then
         only_bpg_lossy_jctvc=true
-        break
+        continue
       fi
 
 
       if [ "$x" == "--only-mozjpeg" ]; then
         only_mozjpeg=true
-        break
+        continue
       fi
 
 
       if [ "$x" == "--only-plots" ]; then
         only_plots=true
-        break
+        continue
       fi
 
       if [ "$x" == "--only-csv" ]; then
         only_csv=true
-        break
+        continue
+      fi
+
+      if [ "$x" == "--get-info" ]; then
+        print_software_stack
+        continue
       fi
 
 
@@ -587,13 +690,18 @@ function main
     fi
     filename=$(basename "$x")
     orig_size=$(wc -c < "$x")
-    convert "$x" -quality 93 -sampling-factor 1x1  "$filename"_libjpeg_reference.jpg
+    #convert "$x" -quality 93 -sampling-factor 1x1  "$filename"_libjpeg_reference.jpg
     convert "$x" "$x".ppm # libjpeg will require ppm file as input
+    jpeg -q 93 -oz -v -qt 2 -h  "$x".ppm "$filename"_libjpeg_reference.jpg
     reference_jpg_size=$(wc -c < "$filename"_libjpeg_reference.jpg)
 
 
     if [ "$only_libjpeg" = true ] || [ "$only_csv" = true ] || [ "$has_options" = false ]; then
       libjpeg_test
+    fi
+
+    if [ "$only_libjpeg_2000" = true ] || [ "$only_csv" = true ] || [ "$has_options" = false ]; then
+      libjpeg_2000_test
     fi
 
     if [ "$only_mozjpeg" = true ] || [ "$only_csv" = true ] || [ "$has_options" = false ]; then
@@ -606,6 +714,10 @@ function main
 
     if [ "$only_pik" = true ] || [ "$only_csv" = true ]  || [ "$has_options" = false ]; then
       pik_test
+    fi
+
+    if [ "$only_av1" = true ] || [ "$only_csv" = true ] || [ "$has_options" = false ]; then
+      av1_test
     fi
 
     if [ "$only_webp" = true ] || [ "$only_csv" = true ] || [ "$has_options" = false ]; then
@@ -634,7 +746,7 @@ function main
     rm -rf "$filename"_butteraugli_plot.png "$filename"_ssimulacra_plot.png
     plotcsv_graph "$filename"_butteraugli_plot.png "$filename"  "Source: $filename"
     plotcsv_graph_ssimulacra "$filename"_ssimulacra_plot.png  "$filename" "Source: $filename"
-    files_to_zip+="libjpeg-${filename}.csv guetzli-${filename}.csv pik-${filename}.csv webp-${filename}.csv webp-lossy-${filename}.csv  bpg-${filename}.csv flif-lossy-${filename}.csv mozjpeg-${filename}.csv bpg-jctvc-${filename}.csv ${filename}_butteraugli_plot.png ${filename}_ssimulacra_plot.png "
+    files_to_zip+="libjpeg-${filename}.csv libjpeg-2000-${filename}.csv guetzli-${filename}.csv pik-${filename}.csv av1-${filename}.csv webp-${filename}.csv webp-lossy-${filename}.csv  bpg-${filename}.csv flif-lossy-${filename}.csv mozjpeg-${filename}.csv bpg-jctvc-${filename}.csv ${filename}_butteraugli_plot.png ${filename}_ssimulacra_plot.png "
   done
 
 
