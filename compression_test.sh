@@ -8,6 +8,7 @@
 #####################################################
 
 #TODO : Taking a butteraugli score of 1.0 as a reference, generate a heatmap of each codec that is just above that byte size
+#TODO : Replace filesize by bpp 
 
 function exists()
 {
@@ -157,7 +158,7 @@ function plotcsv_graph
 	set arrow from $reference_jpg_size, graph 0 to $reference_jpg_size, graph 1 nohead lt 0
 	plot "pik-$2.csv" using 2:3 w lp ls 3 title 'pik', \
     "libjpeg-$2.csv" using 2:3 w lp ls 4 title 'libjpeg', \
-	"libjpeg-2000-$2.csv" using 2:3 w lp ls 10 title 'JPEG 2000', \
+	"libjpeg-2000-$2.csv" using 2:3 w lp ls 10 title 'OpenJPEG(JPEG 2000)', \
     "guetzli-$2.csv" using 2:3 w lp ls 5 title 'guetzli', \
     "flif-lossy-$2.csv" using 2:3 w lp ls 6 title 'flif-lossy', \
 	"bpg-$2.csv" using 2:3 w lp ls 7 title 'bpg(x265)', \
@@ -199,7 +200,7 @@ function plotcsv_graph_ssimulacra
 	set arrow from $reference_jpg_size, graph 0 to $reference_jpg_size, graph 1 nohead lt 0
 	plot "pik-$2.csv" using 2:4 w lp ls 3 title 'pik', \
     "libjpeg-$2.csv" using 2:4 w lp ls 4 title 'libjpeg', \
-	"libjpeg-2000-$2.csv" using 2:4 w lp ls 10 title 'JPEG 2000', \
+	"libjpeg-2000-$2.csv" using 2:4 w lp ls 10 title 'OpenJPEG(JPEG 2000)', \
     "guetzli-$2.csv" using 2:4 w lp ls 5 title 'guetzli', \
     "flif-lossy-$2.csv" using 2:4 w lp ls 6 title 'flif-lossy', \
 	"bpg-$2.csv" using 2:4 w lp ls 7 title 'bpg(x265)', \
