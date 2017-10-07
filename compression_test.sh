@@ -8,7 +8,6 @@
 #####################################################
 
 #TODO : Taking a butteraugli score of 1.0 as a reference, generate a heatmap of each codec that is just above that byte size
-#TODO : Replace filesize by bpp 
 
 function exists()
 {
@@ -129,44 +128,54 @@ function check_dependancies()
 
 }
 
+function convert_to_bpp
+{
+  local filesize=$1
+  local bpp
+  bpp=$(echo "(($filesize * 8) / ($width * $height))" | bc -l)
+  printf -v bpp "%0.2f" "$bpp" #set to 2 dp
+  echo "$bpp"
+}
+
 function plotcsv_graph
 {
   gnuplot -persist <<-EOFMarker
     set terminal pngcairo size 1280,1024 enhanced font "Helvetica,20"
     # line styles
-    set style line 1 lt 1 lw 5 lc rgb '#D53E4F' ps 0 # red
-    set style line 2 lt 1 lw 5 lc rgb '#F46D43' ps 0 # orange
-    set style line 3 lt 1 lw 5 lc rgb '#FDAE61' ps 0 # pale orange
-    set style line 4 lt 1 lw 5 lc rgb '#FEE08B' ps 0 # pale yellow-orange
-    set style line 5 lt 1 lw 5 lc rgb '#E6F598' ps 0 # pale yellow-green
-    set style line 6 lt 1 lw 5 lc rgb '#ABDDA4' ps 0 # pale green
-    set style line 7 lt 1 lw 5 lc rgb '#66C2A5' ps 0 # green
-    set style line 8 lt 1 lw 5 lc rgb '#3288BD' ps 0 # blue
-	set style line 9 lt 1 lw 5 lc rgb '#6D32BD' ps 0 # purple
-	set style line 10 lt 1 lw 5 lc rgb '#77776e' ps 0 # grey
-    set style line 11 lt 1 lw 5 lc rgb '#914d8f' ps 0 # pink
+    set style line 1 lt 1 lw 2 lc rgb '#D53E4F' ps 0 # red
+    set style line 2 lt 1 lw 2 lc rgb '#F46D43' ps 0 # orange
+    set style line 3 lt 1 lw 2 lc rgb '#FDAE61' ps 0 # pale orange
+    set style line 4 lt 1 lw 2 lc rgb '#FEE08B' ps 0 # pale yellow-orange
+    set style line 5 lt 1 lw 2 lc rgb '#E6F598' ps 0 # pale yellow-green
+    set style line 6 lt 1 lw 2 lc rgb '#ABDDA4' ps 0 # pale green
+    set style line 7 lt 1 lw 2 lc rgb '#66C2A5' ps 0 # green
+    set style line 8 lt 1 lw 2 lc rgb '#3288BD' ps 0 # blue
+	set style line 9 lt 1 lw 2 lc rgb '#6D32BD' ps 0 # purple
+	set style line 10 lt 1 lw 2 lc rgb '#77776e' ps 0 # grey
+    set style line 11 lt 1 lw 2 lc rgb '#914d8f' ps 0 # pink
     set tics nomirror
 	set ytics 1
 	set mytics 10
     set output "$1"
 	set title  "$3"
-    set xlabel 'bytesize'
+    set xlabel 'Bits per pixel(bpp)'
     set ylabel 'butteraugli score'
 	set style func linespoints
 	set datafile separator ","
 	set xtics font ", 12"
-	set arrow from $reference_jpg_size, graph 0 to $reference_jpg_size, graph 1 nohead lt 0
-	plot "pik-$2.csv" using 2:3 w lp ls 3 title 'pik', \
-    "libjpeg-$2.csv" using 2:3 w lp ls 4 title 'libjpeg', \
-	"libjpeg-2000-$2.csv" using 2:3 w lp ls 10 title 'OpenJPEG(JPEG 2000)', \
-    "guetzli-$2.csv" using 2:3 w lp ls 5 title 'guetzli', \
-    "flif-lossy-$2.csv" using 2:3 w lp ls 6 title 'flif-lossy', \
-	"bpg-$2.csv" using 2:3 w lp ls 7 title 'bpg(x265)', \
-	"bpg-jctvc-$2.csv" using 2:3 w lp ls 8 title 'bpg(jctvc)', \
-	"mozjpeg-$2.csv" using 2:3 w lp ls 9 title 'MozJPEG', \
-	"av1-$2.csv" using 3:4 w lp ls 11 title 'AV1', \
-	"webp-$2.csv" using 2:3 w lp ls 1 title 'webp-near-lossless-40/60', \
-	"webp-lossy-$2.csv" using 2:3 w lp ls 2 title 'webp-lossy', \
+	set xrange [:8]
+	set arrow from $reference_jpg_bpp, graph 0 to $reference_jpg_bpp, graph 1 nohead lt 0
+	plot "pik-$2.csv" using 3:4 w lp ls 3 title 'pik', \
+    "libjpeg-$2.csv" using 3:4 w lp ls 4 title 'libjpeg', \
+	"libjpeg-2000-$2.csv" using 3:4 w lp ls 10 title 'OpenJPEG(JPEG 2000)', \
+    "guetzli-$2.csv" using 3:4 w lp ls 5 title 'guetzli', \
+    "flif-lossy-$2.csv" using 3:4 w lp ls 6 title 'flif-lossy', \
+	"bpg-$2.csv" using 3:4 w lp ls 7 title 'bpg(x265)', \
+	"bpg-jctvc-$2.csv" using 3:4 w lp ls 8 title 'bpg(jctvc)', \
+	"mozjpeg-$2.csv" using 3:4 w lp ls 9 title 'MozJPEG', \
+	"av1-$2.csv" using 4:5 w lp ls 11 title 'AV1', \
+	"webp-$2.csv" using 3:4 w lp ls 1 title 'webp-near-lossless-40/60', \
+	"webp-lossy-$2.csv" using 3:4 w lp ls 2 title 'webp-lossy', \
 	1/0 t "Reference Size" lt 0
 EOFMarker
 }
@@ -176,39 +185,40 @@ function plotcsv_graph_ssimulacra
   gnuplot -persist <<-EOFMarker
     set terminal pngcairo size 1280,1024 enhanced font "Helvetica,20"
     # line styles
-    set style line 1 lt 1 lw 5 lc rgb '#D53E4F' ps 0 # red
-    set style line 2 lt 1 lw 5 lc rgb '#F46D43' ps 0 # orange
-    set style line 3 lt 1 lw 5 lc rgb '#FDAE61' ps 0 # pale orange
-    set style line 4 lt 1 lw 5 lc rgb '#FEE08B' ps 0 # pale yellow-orange
-    set style line 5 lt 1 lw 5 lc rgb '#E6F598' ps 0 # pale yellow-green
-    set style line 6 lt 1 lw 5 lc rgb '#ABDDA4' ps 0 # pale green
-    set style line 7 lt 1 lw 5 lc rgb '#66C2A5' ps 0 # green
-    set style line 8 lt 1 lw 5 lc rgb '#3288BD' ps 0 # blue
-	set style line 9 lt 1 lw 5 lc rgb '#6D32BD' ps 0 # purple
-	set style line 10 lt 1 lw 5 lc rgb '#77776e' ps 0 # grey
-    set style line 11 lt 1 lw 5 lc rgb '#914d8f' ps 0 # pink
+    set style line 1 lt 1 lw 2 lc rgb '#D53E4F' ps 0 # red
+    set style line 2 lt 1 lw 2 lc rgb '#F46D43' ps 0 # orange
+    set style line 3 lt 1 lw 2 lc rgb '#FDAE61' ps 0 # pale orange
+    set style line 4 lt 1 lw 2 lc rgb '#FEE08B' ps 0 # pale yellow-orange
+    set style line 5 lt 1 lw 2 lc rgb '#E6F598' ps 0 # pale yellow-green
+    set style line 6 lt 1 lw 2 lc rgb '#ABDDA4' ps 0 # pale green
+    set style line 7 lt 1 lw 2 lc rgb '#66C2A5' ps 0 # green
+    set style line 8 lt 1 lw 2 lc rgb '#3288BD' ps 0 # blue
+	set style line 9 lt 1 lw 2 lc rgb '#6D32BD' ps 0 # purple
+	set style line 10 lt 1 lw 2 lc rgb '#77776e' ps 0 # grey
+    set style line 11 lt 1 lw 2 lc rgb '#914d8f' ps 0 # pink
     set tics nomirror
 	set ytics 0.01
 	set mytics 10
     set output "$1"
 	set title  "$3"
-    set xlabel 'bytesize'
+    set xlabel 'Bits per pixel(bpp)'
     set ylabel 'ssimulacra score'
 	set style func linespoints
 	set datafile separator ","
 	set xtics font ", 12"
-	set arrow from $reference_jpg_size, graph 0 to $reference_jpg_size, graph 1 nohead lt 0
-	plot "pik-$2.csv" using 2:4 w lp ls 3 title 'pik', \
-    "libjpeg-$2.csv" using 2:4 w lp ls 4 title 'libjpeg', \
-	"libjpeg-2000-$2.csv" using 2:4 w lp ls 10 title 'OpenJPEG(JPEG 2000)', \
-    "guetzli-$2.csv" using 2:4 w lp ls 5 title 'guetzli', \
-    "flif-lossy-$2.csv" using 2:4 w lp ls 6 title 'flif-lossy', \
-	"bpg-$2.csv" using 2:4 w lp ls 7 title 'bpg(x265)', \
-	"bpg-jctvc-$2.csv" using 2:4 w lp ls 8 title 'bpg(jctvc)', \
-	"mozjpeg-$2.csv" using 2:4 w lp ls 9 title 'MozJPEG', \
-	"av1-$2.csv" using 3:5 w lp ls 11 title 'AV1', \
-	"webp-$2.csv" using 2:4 w lp ls 1 title 'webp-near-lossless-40/60', \
-	"webp-lossy-$2.csv" using 2:4 w lp ls 2 title 'webp-lossy', \
+	set xrange [:8]
+	set arrow from $reference_jpg_bpp, graph 0 to $reference_jpg_bpp, graph 1 nohead lt 0
+	plot "pik-$2.csv" using 3:5 w lp ls 3 title 'pik', \
+    "libjpeg-$2.csv" using 3:5 w lp ls 4 title 'libjpeg', \
+	"libjpeg-2000-$2.csv" using 3:5 w lp ls 10 title 'OpenJPEG(JPEG 2000)', \
+    "guetzli-$2.csv" using 3:5 w lp ls 5 title 'guetzli', \
+    "flif-lossy-$2.csv" using 3:5 w lp ls 6 title 'flif-lossy', \
+	"bpg-$2.csv" using 3:5 w lp ls 7 title 'bpg(x265)', \
+	"bpg-jctvc-$2.csv" using 3:5 w lp ls 8 title 'bpg(jctvc)', \
+	"mozjpeg-$2.csv" using 3:5 w lp ls 9 title 'MozJPEG', \
+	"av1-$2.csv" using 4:6 w lp ls 11 title 'AV1', \
+	"webp-$2.csv" using 3:5 w lp ls 1 title 'webp-near-lossless-40/60', \
+	"webp-lossy-$2.csv" using 3:5 w lp ls 2 title 'webp-lossy', \
 	1/0 t "Reference Size" lt 0
 EOFMarker
 }
@@ -222,7 +232,7 @@ function libjpeg_test
   #Start csv generation
   echo "Test_Image,Original_Size" >> libjpeg-"$filename".csv
   echo "$filename","$orig_size" >> libjpeg-"$filename".csv
-  echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> libjpeg-"$filename".csv
+  echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> libjpeg-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating JPEGs optimized by LibJPEG[Source :$x] in parallel"
     #ImageMagick uses an old version of libjpeg so i take the latest one from github for accuracy
@@ -236,13 +246,14 @@ function libjpeg_test
     #convert "$x" -quality "$i" -sampling-factor 1x1 "$filename"_libjpeg_q"$i".jpg
     #jpeg -q "$i" -oz -v -qt 2 -h  "$x".ppm "$filename"_libjpeg_q"$i".jpg
     new_size=$(wc -c < "$filename"_libjpeg_q"$i".jpg)
+    new_size_bpp=$(convert_to_bpp "$new_size")
     butteraugli_score=$(butteraugli "$x" "$filename"_libjpeg_q"$i".jpg)
     ssimulacra_score=$(ssimulacra "$x" "$filename"_libjpeg_q"$i".jpg)
     compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
     reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
     printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
     printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-    echo "$i","$new_size","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> libjpeg-"$filename".csv
+    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> libjpeg-"$filename".csv
   done
 #End csv generation
 }
@@ -258,7 +269,7 @@ function av1_test
   #Start csv generation
   echo "Test_Image,Original_Size" >> av1-"$filename".csv
   echo "$filename","$orig_size" >> av1-"$filename".csv
-  echo "Quality(cq-level),Flatness(qm-min),Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> av1-"$filename".csv
+  echo "Quality(cq-level),Flatness(qm-min),Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> av1-"$filename".csv
   for q in 10 12 14 16 18 20 22 24 26 28 30; do
     for i in 4 6 8 10 12; do
       if [ "$only_csv" = false ]; then
@@ -268,13 +279,14 @@ function av1_test
         convert "$x"_"$i"_"$q".png PNG24:"$x"_"$i"_"$q"_ssimulacra.png # ssimulacra can't handle generated png
       fi
       new_size=$(wc -c < "$x"_"$i"_"$q".ivf)
+      new_size_bpp=$(convert_to_bpp "$new_size")
       butteraugli_score=$(butteraugli "$x" "$x"_"$i"_"$q".png)
       ssimulacra_score=$(ssimulacra "$x" "$x"_"$i"_"$q"_ssimulacra.png)
       compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
       reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
       printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
       printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-      echo "$q","$i","$new_size","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> av1-"$filename".csv
+      echo "$q","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> av1-"$filename".csv
     done
   done
 #End csv generation
@@ -287,7 +299,7 @@ function libjpeg_2000_test
   #Start csv generation
   echo "Test_Image,Original_Size" >> libjpeg-2000-"$filename".csv
   echo "$filename","$orig_size" >> libjpeg-2000-"$filename".csv
-  echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> libjpeg-2000-"$filename".csv
+  echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> libjpeg-2000-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating JPEG 2000 images optimized by LibJPEG[Source :$x] in parallel"
     parallel --will-cite 'opj_compress -i "{1}".ppm -r "{2}" -o "{3}"_openjpeg_q"{2}".jp2 -I -r "{2}"' ::: "$x" ::: {0..25}  ::: "$filename"
@@ -299,13 +311,14 @@ function libjpeg_2000_test
     #opj_compress -i "$x".ppm -r "$i" -o "$filename"_openjpeg_q"$i".jp2 -I -r "$i"
     #opj_decompress -i "$filename"_openjpeg_q"$i".jp2  -o "$filename"_openjpeg_q"$i".png
     new_size=$(wc -c < "$filename"_openjpeg_q"$i".jp2)
+    new_size_bpp=$(convert_to_bpp "$new_size")
     butteraugli_score=$(butteraugli "$x" "$filename"_openjpeg_q"$i".png)
     ssimulacra_score=$(ssimulacra "$x" "$filename"_openjpeg_q"$i".png)
     compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
     reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
     printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
     printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-    echo "$i","$new_size","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> libjpeg-2000-"$filename".csv
+    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> libjpeg-2000-"$filename".csv
   done
 #End csv generation
 }
@@ -317,7 +330,7 @@ function guetzli_test
 #Start csv generation
   echo "Test_Image,Original_Size" >> guetzli-"$filename".csv
   echo "$filename","$orig_size" >> guetzli-"$filename".csv
-  echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> guetzli-"$filename".csv
+  echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> guetzli-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating JPEGs optimized by Guetzli(This will take a while...BE patient)[Source :$x] in parallel"
     parallel --will-cite 'guetzli --nomemlimit --quality "{2}"  "{1}"  "{3}"_guetzli_q"{2}".jpg' ::: "$x" ::: {100..84} ::: "$filename"
@@ -327,13 +340,14 @@ function guetzli_test
   do
     #guetzli --quality "$i"  "$x"  "$filename"_guetzli_q"$i".jpg
     new_size=$(wc -c < "$filename"_guetzli_q"$i".jpg)
+    new_size_bpp=$(convert_to_bpp "$new_size")
     butteraugli_score=$(butteraugli "$x" "$filename"_guetzli_q"$i".jpg)
     ssimulacra_score=$(ssimulacra "$x" "$filename"_guetzli_q"$i".jpg)
     compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
     reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
     printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
     printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-    echo "$i","$new_size","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> guetzli-"$filename".csv
+    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> guetzli-"$filename".csv
   done
 #End csv generation
 }
@@ -345,7 +359,7 @@ function mozjpeg_test
   #Start csv generation
   echo "Test_Image,Original_Size" >> mozjpeg-"$filename".csv
   echo "$filename","$orig_size" >> mozjpeg-"$filename".csv
-  echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> mozjpeg-"$filename".csv
+  echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> mozjpeg-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating JPEGs optimized by MozJPEG[Source :$x] in parallel"
     parallel --will-cite 'cjpeg -optimize -dc-scan-opt 2 -sample 1x1 -quality "{1}" -outfile "{2}"_mozjpeg_q{1}.jpg {3}' ::: {100..70}  ::: "$filename" ::: "$x"
@@ -355,13 +369,14 @@ function mozjpeg_test
   do
     #cjpeg -optimize -sample 1x1 -quality "$i" -outfile "$filename"_mozjpeg_q"$i".jpg "$x"
     new_size=$(wc -c < "$filename"_mozjpeg_q"$i".jpg)
+    new_size_bpp=$(convert_to_bpp "$new_size")
     butteraugli_score=$(butteraugli "$x" "$filename"_mozjpeg_q"$i".jpg)
     ssimulacra_score=$(ssimulacra "$x" "$filename"_mozjpeg_q"$i".jpg)
     compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
     reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
     printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
     printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-    echo "$i","$new_size","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> mozjpeg-"$filename".csv
+    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> mozjpeg-"$filename".csv
   done
 #End csv generation
 }
@@ -373,7 +388,7 @@ function pik_test
 #Start csv generation
   echo "Test_Image,Original_Size" >> pik-"$filename".csv
   echo "$filename","$orig_size" >> pik-"$filename".csv
-  echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> pik-"$filename".csv
+  echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> pik-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating Pik images(This will take a while...BE patient)[Source :$x] in parallel"
     parallel --will-cite 'cpik "{1}" "{3}"_q"{2}".pik --distance "{2}"' ::: "$x" ::: $(seq 0.5 0.1 3.0) ::: "$filename"
@@ -384,6 +399,7 @@ function pik_test
   do
     #cpik  "$x" "$filename"_q"$i".pik --distance "$i"
     new_size=$(wc -c < "$filename"_q"$i".pik)
+    new_size_bpp=$(convert_to_bpp "$new_size")
     #convert to png to allow comparision
     #dpik "$filename"_q"$i".pik "$filename"_pik_q"$i".png
     butteraugli_score=$(butteraugli "$x" "$filename"_pik_q"$i".png)
@@ -392,7 +408,7 @@ function pik_test
     reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
     printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
     printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-    echo "$i","$new_size","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> pik-"$filename".csv
+    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> pik-"$filename".csv
   done
 #End csv generation
 }
@@ -404,7 +420,7 @@ function webp_near_lossless
 #Start csv generation
   echo "Test_Image,Original_Size" >> webp-"$filename".csv
   echo "$filename","$orig_size" >> webp-"$filename".csv
-  echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> webp-"$filename".csv
+  echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> webp-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating Webp images(Near Lossless)[Source :$x] in parallel"
     parallel --will-cite 'cwebp -sharp_yuv -mt -quiet -near_lossless "{1}" -q 100 -m 6 "{2}"  -o "{3}"_webp_q{1}.webp' ::: 60 40 ::: "$x" ::: "$filename"
@@ -419,13 +435,14 @@ function webp_near_lossless
     #convert to png to allow comparision
     #dwebp -quiet "$filename"_webp_q"$i".webp -o "$filename"_webp_q"$i".png
     new_size=$(wc -c < "$filename"_webp_q"$i".webp)
+    new_size_bpp=$(convert_to_bpp "$new_size")
     butteraugli_score=$(butteraugli "$x" "$filename"_webp_q"$i".png)
     ssimulacra_score=$(ssimulacra "$x" "$filename"_webp_q"$i".png)
     compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
     reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
     printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
     printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-    echo "$i","$new_size","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> webp-"$filename".csv
+    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> webp-"$filename".csv
   done
 #End csv generation
 }
@@ -437,7 +454,7 @@ function webp_lossy
 #Start csv generation
   echo "Test_Image,Original_Size" >> webp-lossy-"$filename".csv
   echo "$filename","$orig_size" >> webp-lossy-"$filename".csv
-  echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> webp-lossy-"$filename".csv
+  echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> webp-lossy-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating Webp images(Lossy)[Source :$x] in parallel"
     parallel  --will-cite 'cwebp -sharp_yuv   -mt -quiet -q "{1}" -m 6 "{2}"  -o "{3}"_webp_lossy_q"{1}".webp' ::: {100..70}  ::: "$x" ::: "$filename"
@@ -450,13 +467,14 @@ function webp_lossy
     #convert to png to allow comparision
     #dwebp -quiet "$filename"_webp_lossy_q"$i".webp -o "$filename"_webp_lossy_q"$i".png
     new_size=$(wc -c < "$filename"_webp_lossy_q"$i".webp)
+    new_size_bpp=$(convert_to_bpp "$new_size")
     butteraugli_score=$(butteraugli "$x" "$filename"_webp_lossy_q"$i".png)
     ssimulacra_score=$(ssimulacra "$x" "$filename"_webp_lossy_q"$i".png)
     compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
     reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
     printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
     printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-    echo "$i","$new_size","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> webp-lossy-"$filename".csv
+    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> webp-lossy-"$filename".csv
   done
 #End csv generation
 }
@@ -468,7 +486,7 @@ function bpg_lossy
   #Start csv generation
   echo "Test_Image,Original_Size" >> bpg-"$filename".csv
   echo "$filename","$orig_size" >> bpg-"$filename".csv
-  echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> bpg-"$filename".csv
+  echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> bpg-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating BPG images(x265 encoder - lossy)[Source :$x] in parallel"
     parallel --will-cite 'bpgenc -q "{1}" -f 444  -m 9 "{2}" -o "{3}"_bpg_q{1}.bpg' ::: {0..37}  ::: "$x" ::: "$filename"
@@ -481,13 +499,14 @@ function bpg_lossy
     #convert to png to allow comparision
     #bpgdec "$filename"_bpg_q"$i".bpg -o "$filename"_bpg_q"$i".png
     new_size=$(wc -c < "$filename"_bpg_q"$i".bpg)
+    new_size_bpp=$(convert_to_bpp "$new_size")
     butteraugli_score=$(butteraugli "$x" "$filename"_bpg_q"$i".png)
     ssimulacra_score=$(ssimulacra "$x" "$filename"_bpg_q"$i".png)
     compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
     reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
     printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
     printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-    echo "$i","$new_size","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> bpg-"$filename".csv
+    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> bpg-"$filename".csv
   done
 #End csv generation
 }
@@ -499,7 +518,7 @@ function bpg_lossy_jctvc
   #Start csv generation
   echo "Test_Image,Original_Size" >> bpg-jctvc-"$filename".csv
   echo "$filename","$orig_size" >> bpg-jctvc-"$filename".csv
-  echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> bpg-jctvc-"$filename".csv
+  echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> bpg-jctvc-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating BPG images(jctvc encoder - lossy)[Source :$x] in parallel"
     parallel --will-cite 'bpgenc -q "{1}" -f 444  -m 9 -e jctvc "{2}" -o "{3}"_bpg_jctvc_q{1}.bpg' ::: {0..37}  ::: "$x" ::: "$filename"
@@ -512,13 +531,14 @@ function bpg_lossy_jctvc
     #convert to png to allow comparision
     #bpgdec "$filename"_bpg_jctvc_q"$i".bpg -o "$filename"_bpg_jctvc_q"$i".png
     new_size=$(wc -c < "$filename"_bpg_jctvc_q"$i".bpg)
+    new_size_bpp=$(convert_to_bpp "$new_size")
     butteraugli_score=$(butteraugli "$x" "$filename"_bpg_jctvc_q"$i".png)
     ssimulacra_score=$(ssimulacra "$x" "$filename"_bpg_jctvc_q"$i".png)
     compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
     reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
     printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
     printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-    echo "$i","$new_size","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> bpg-jctvc-"$filename".csv
+    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> bpg-jctvc-"$filename".csv
   done
 #End csv generation
 }
@@ -530,7 +550,7 @@ function flif_lossy
   #Start csv generation
   echo "Test_Image,Original_Size" >> flif-lossy-"$filename".csv
   echo "$filename","$orig_size" >> flif-lossy-"$filename".csv
-  echo "Quality,Size(bytes),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> flif-lossy-"$filename".csv
+  echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> flif-lossy-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating FLIF images(Lossy)[Source :$x] in parallel"
     parallel --will-cite 'flif --overwrite -e -E100 -Q"{1}"  "{2}" "{3}"_lossy_q"{1}".flif' ::: {100..0}  ::: "$x" ::: "$filename"
@@ -543,13 +563,14 @@ function flif_lossy
     #convert to png to allow comparision
     #flif -d "$filename"_lossy_q"$i".flif "$filename"_flif_lossy_q"$i".png
     new_size=$(wc -c < "$filename"_lossy_q"$i".flif)
+    new_size_bpp=$(convert_to_bpp "$new_size")
     butteraugli_score=$(butteraugli "$x" "$filename"_flif_lossy_q"$i".png)
     ssimulacra_score=$(ssimulacra "$x" "$filename"_flif_lossy_q"$i".png)
     compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
     reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
     printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
     printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-    echo "$i","$new_size","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> flif-lossy-"$filename".csv
+    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> flif-lossy-"$filename".csv
   done
 #End csv generation
 }
@@ -673,12 +694,6 @@ function main
         continue
       fi
 
-      if [ "$x" == "--get-info" ]; then
-        print_software_stack
-        continue
-      fi
-
-
     done
 
   fi
@@ -695,7 +710,9 @@ function main
     convert "$x" "$x".ppm # libjpeg will require ppm file as input
     jpeg -q 93 -oz -v -qt 2 -h  "$x".ppm "$filename"_libjpeg_reference.jpg
     reference_jpg_size=$(wc -c < "$filename"_libjpeg_reference.jpg)
-
+    width=$(identify -format "%w" "$x")
+    height=$(identify -format "%h" "$x")
+    reference_jpg_bpp=$(convert_to_bpp "$reference_jpg_size")
 
     if [ "$only_libjpeg" = true ] || [ "$only_csv" = true ] || [ "$has_options" = false ]; then
       libjpeg_test
