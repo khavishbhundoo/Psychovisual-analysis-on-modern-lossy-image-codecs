@@ -270,7 +270,7 @@ function av1_test
   echo "Test_Image,Original_Size" >> av1-"$filename".csv
   echo "$filename","$orig_size" >> av1-"$filename".csv
   echo "Quality(cq-level),Flatness(qm-min),Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> av1-"$filename".csv
-  for q in 10 12 14 16 18 20 22 24 26 28 30; do
+  for q in 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40; do
     for i in 4 6 8 10 12; do
       if [ "$only_csv" = false ]; then
         aomenc "$x".y4m --i444 --enable-qm=1 --qm-min="$i" --profile=3 -w "$width" -h "$height" -b 10 --end-usage=q --cq-level="$q" -o "$x"_"$i"_"$q".ivf
