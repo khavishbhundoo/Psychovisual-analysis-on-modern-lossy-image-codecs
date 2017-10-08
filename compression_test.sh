@@ -9,6 +9,7 @@
 
 #TODO : Taking a butteraugli score of 1.0 as a reference, generate a heatmap of each codec that is just above that byte size
 
+#Check if a command line tool is installed on the server
 function exists()
 {
   command -v "$1" >/dev/null 2>&1
@@ -128,6 +129,7 @@ function check_dependancies()
 
 }
 
+#Convert filesize(bytes) to bits per pixels(bpp)
 function convert_to_bpp
 {
   local filesize=$1
@@ -258,7 +260,7 @@ function libjpeg_test
 #End csv generation
 }
 
-#need to complete
+#TODO : Add paralleism
 function av1_test
 {
   echo "Analysing images optimized by AV1"
