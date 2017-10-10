@@ -211,8 +211,8 @@ function plotcsv_graph_merge
 	set datafile separator ","
 	set xtics font ", 12"
 	set xrange [:8]
-	plot "< tail -q -n +4  pik-*.csv" using 3:4:(1.0) w lp ls 3 smooth acsplines title 'pik-smooth', \
-	"< tail -q -n +4  libjpeg-*.csv" using 3:4:(1.0) w lp ls 4 smooth acsplines title 'libjpeg-smooth', \
+	plot "< tail -q -n +4  pik-*.csv" using 3:4:(1.0) w lp ls 3 smooth acsplines title 'pik', \
+	"< tail -q -n +4  libjpeg-*.csv" using 3:4:(1.0) w lp ls 4 smooth acsplines title 'libjpeg', \
 	"< tail -q -n +4  libjpeg2000-*.csv" using 3:4:(1.0) w lp ls 10 smooth acsplines title 'OpenJPEG(JPEG 2000)', \
 	"< tail -q -n +4  guetzli-*.csv" using 3:4:(1.0) w lp ls 5 smooth acsplines  title 'guetzli', \
     "< tail -q -n +4  flif-lossy-*.csv" using 3:4:(1.0) w lp ls 6 smooth acsplines title 'flif-lossy', \
@@ -790,13 +790,15 @@ function main
     done
 
   fi
-
+  
+  image_count=0
   files_to_zip=""
   for x in "$@"; do
     #skip if we are not dealing with an image
     if [ "${x: 0:2}" == "--" ]; then
       continue
     fi
+	image_count=$(( image_count + 1 ))
     filename=$(basename "$x")
     orig_size=$(wc -c < "$x")
     #convert "$x" -quality 93 -sampling-factor 1x1  "$filename"_libjpeg_reference.jpg
@@ -861,8 +863,8 @@ function main
   done
 
   if [ "$combine_plots" = true ]; then
-    plotcsv_graph_merge butteraugli_plot_merge.png "Merge Butteraugli Plot"
-    plotcsv_graph_ssimulacra_merge ssimulacra_plot_merge.png  "Merge Ssimulacra Plot"
+    plotcsv_graph_merge butteraugli_plot_merge.png "Merge Butteraugli Plot( ${image_count} images )"
+    plotcsv_graph_ssimulacra_merge ssimulacra_plot_merge.png  "Merge Ssimulacra Plot( ${image_count} images )"
     files_to_zip+="butteraugli_plot_merge.png ssimulacra_plot_merge.png "
   fi
 
