@@ -780,9 +780,9 @@ function main
         only_csv=true
         continue
       fi
-	   
-	  
-	  if [ "$x" == "--combine-plots" ]; then
+
+
+      if [ "$x" == "--combine-plots" ]; then
         combine_plots=true
         continue
       fi
@@ -859,12 +859,12 @@ function main
     plotcsv_graph_ssimulacra "$filename"_ssimulacra_plot.png  "$filename" "Source: $filename"
     files_to_zip+="${x} libjpeg-${filename}.csv libjpeg2000-${filename}.csv guetzli-${filename}.csv pik-${filename}.csv av1-${filename}.csv webp-${filename}.csv webp-lossy-${filename}.csv  bpg-${filename}.csv flif-lossy-${filename}.csv mozjpeg-${filename}.csv bpg-jctvc-${filename}.csv ${filename}_butteraugli_plot.png ${filename}_ssimulacra_plot.png "
   done
-  
-    if [ "$combine_plots" = true ]; then
-	plotcsv_graph_merge butteraugli_plot_merge.png "Merge Butteraugli Plot"
-	plotcsv_graph_ssimulacra_merge ssimulacra_plot_merge.png  "Merge Ssimulacra Plot"
-	files_to_zip+="butteraugli_plot_merge.png ssimulacra_plot_merge.png "
-	fi
+
+  if [ "$combine_plots" = true ]; then
+    plotcsv_graph_merge butteraugli_plot_merge.png "Merge Butteraugli Plot"
+    plotcsv_graph_ssimulacra_merge ssimulacra_plot_merge.png  "Merge Ssimulacra Plot"
+    files_to_zip+="butteraugli_plot_merge.png ssimulacra_plot_merge.png "
+  fi
 
 
   #Create a zip to store the results
