@@ -32,6 +32,7 @@ function usage()
   echo "--only-av1              Redo the test[image generation + csv ] only for av1 and regenerate plots"
   echo "--only-plots            Only regenerate plots"
   echo "--only-csv              Only regenerate csv files and plots"
+  echo "--combine-plots         Merge results of multiple images to create a single butteraugli and ssimulacra plot"
   exit 1
 
 }
@@ -169,7 +170,7 @@ function plotcsv_graph
 	set arrow from $reference_jpg_bpp, graph 0 to $reference_jpg_bpp, graph 1 nohead lt 0
 	plot "pik-$2.csv" using 3:4 w lp ls 3 title 'pik', \
     "libjpeg-$2.csv" using 3:4 w lp ls 4 title 'libjpeg', \
-	"libjpeg-2000-$2.csv" using 3:4 w lp ls 10 title 'OpenJPEG(JPEG 2000)', \
+	"libjpeg2000-$2.csv" using 3:4 w lp ls 10 title 'OpenJPEG(JPEG 2000)', \
     "guetzli-$2.csv" using 3:4 w lp ls 5 title 'guetzli', \
     "flif-lossy-$2.csv" using 3:4 w lp ls 6 title 'flif-lossy', \
 	"bpg-$2.csv" using 3:4 w lp ls 7 title 'bpg(x265)', \
@@ -179,6 +180,48 @@ function plotcsv_graph
 	"webp-$2.csv" using 3:4 w lp ls 1 title 'webp-near-lossless-40/60', \
 	"webp-lossy-$2.csv" using 3:4 w lp ls 2 title 'webp-lossy', \
 	1/0 t "Reference Size" lt 0
+EOFMarker
+}
+
+
+function plotcsv_graph_merge
+{
+  gnuplot -persist <<-EOFMarker
+    set terminal pngcairo size 1280,1024 enhanced font "Helvetica,20"
+    # line styles
+    set style line 1 lt 1 lw 2 lc rgb '#D53E4F' ps 0 # red
+    set style line 2 lt 1 lw 2 lc rgb '#F46D43' ps 0 # orange
+    set style line 3 lt 1 lw 2 lc rgb '#FDAE61' ps 0 # pale orange
+    set style line 4 lt 1 lw 2 lc rgb '#FEE08B' ps 0 # pale yellow-orange
+    set style line 5 lt 1 lw 2 lc rgb '#E6F598' ps 0 # pale yellow-green
+    set style line 6 lt 1 lw 2 lc rgb '#ABDDA4' ps 0 # pale green
+    set style line 7 lt 1 lw 2 lc rgb '#66C2A5' ps 0 # green
+    set style line 8 lt 1 lw 2 lc rgb '#3288BD' ps 0 # blue
+	set style line 9 lt 1 lw 2 lc rgb '#6D32BD' ps 0 # purple
+	set style line 10 lt 1 lw 2 lc rgb '#77776e' ps 0 # grey
+    set style line 11 lt 1 lw 2 lc rgb '#914d8f' ps 0 # pink
+    set tics nomirror
+	set ytics 1
+	set mytics 10
+    set output "$1"
+	set title  "$2"
+    set xlabel 'Bits per pixel(bpp)'
+    set ylabel 'butteraugli score'
+	set style func linespoints
+	set datafile separator ","
+	set xtics font ", 12"
+	set xrange [:8]
+	plot "< tail -q -n +4  pik-*.csv" using 3:4:(1.0) w lp ls 3 smooth acsplines title 'pik-smooth', \
+	"< tail -q -n +4  libjpeg-*.csv" using 3:4:(1.0) w lp ls 4 smooth acsplines title 'libjpeg-smooth', \
+	"< tail -q -n +4  libjpeg2000-*.csv" using 3:4:(1.0) w lp ls 10 smooth acsplines title 'OpenJPEG(JPEG 2000)', \
+	"< tail -q -n +4  guetzli-*.csv" using 3:4:(1.0) w lp ls 5 smooth acsplines  title 'guetzli', \
+    "< tail -q -n +4  flif-lossy-*.csv" using 3:4:(1.0) w lp ls 6 smooth acsplines title 'flif-lossy', \
+	"< tail -q -n +4  bpg-*.csv" using 3:4:(1.0) w lp ls 7 smooth acsplines title 'bpg(x265)', \
+	"< tail -q -n +4  bpg-jctvc-*.csv" using 3:4:(1.0) w lp ls 8 smooth acsplines title 'bpg(jctvc)', \
+	"< tail -q -n +4  mozjpeg-*.csv" using 3:4:(1.0) w lp ls 9 smooth acsplines title 'MozJPEG', \
+	"< tail -q -n +4  av1-*.csv" using 4:5:(1.0) w lp ls 11 smooth acsplines title 'AV1', \
+	"< tail -q -n +4  webp-*.csv" using 3:4:(1.0) w lp ls 1 smooth acsplines title 'webp-near-lossless-40/60', \
+	"< tail -q -n +4  webp-lossy-*.csv" using 3:4:(1.0) w lp ls 2 smooth acsplines  title 'webp-lossy'
 EOFMarker
 }
 
@@ -212,7 +255,7 @@ function plotcsv_graph_ssimulacra
 	set arrow from $reference_jpg_bpp, graph 0 to $reference_jpg_bpp, graph 1 nohead lt 0
 	plot "pik-$2.csv" using 3:5 w lp ls 3 title 'pik', \
     "libjpeg-$2.csv" using 3:5 w lp ls 4 title 'libjpeg', \
-	"libjpeg-2000-$2.csv" using 3:5 w lp ls 10 title 'OpenJPEG(JPEG 2000)', \
+	"libjpeg2000-$2.csv" using 3:5 w lp ls 10 title 'OpenJPEG(JPEG 2000)', \
     "guetzli-$2.csv" using 3:5 w lp ls 5 title 'guetzli', \
     "flif-lossy-$2.csv" using 3:5 w lp ls 6 title 'flif-lossy', \
 	"bpg-$2.csv" using 3:5 w lp ls 7 title 'bpg(x265)', \
@@ -225,6 +268,47 @@ function plotcsv_graph_ssimulacra
 EOFMarker
 }
 
+
+function plotcsv_graph_ssimulacra_merge
+{
+  gnuplot -persist <<-EOFMarker
+    set terminal pngcairo size 1280,1024 enhanced font "Helvetica,20"
+    # line styles
+    set style line 1 lt 1 lw 2 lc rgb '#D53E4F' ps 0 # red
+    set style line 2 lt 1 lw 2 lc rgb '#F46D43' ps 0 # orange
+    set style line 3 lt 1 lw 2 lc rgb '#FDAE61' ps 0 # pale orange
+    set style line 4 lt 1 lw 2 lc rgb '#FEE08B' ps 0 # pale yellow-orange
+    set style line 5 lt 1 lw 2 lc rgb '#E6F598' ps 0 # pale yellow-green
+    set style line 6 lt 1 lw 2 lc rgb '#ABDDA4' ps 0 # pale green
+    set style line 7 lt 1 lw 2 lc rgb '#66C2A5' ps 0 # green
+    set style line 8 lt 1 lw 2 lc rgb '#3288BD' ps 0 # blue
+	set style line 9 lt 1 lw 2 lc rgb '#6D32BD' ps 0 # purple
+	set style line 10 lt 1 lw 2 lc rgb '#77776e' ps 0 # grey
+    set style line 11 lt 1 lw 2 lc rgb '#914d8f' ps 0 # pink
+    set tics nomirror
+	set ytics 0.01
+	set mytics 10
+    set output "$1"
+	set title  "$2"
+    set xlabel 'Bits per pixel(bpp)'
+    set ylabel 'ssimulacra score'
+	set style func linespoints
+	set datafile separator ","
+	set xtics font ", 12"
+	set xrange [:8]
+	plot "< tail -q -n +4  pik-*.csv" using 3:5:(1.0) w lp ls 3 smooth acsplines title 'pik', \
+	"< tail -q -n +4  libjpeg-*.csv" using 3:5:(1.0) w lp ls 4 smooth acsplines title 'libjpeg', \
+	"< tail -q -n +4  libjpeg2000-*.csv" using 3:5:(1.0) w lp ls 10 smooth acsplines title 'OpenJPEG(JPEG 2000)', \
+	"< tail -q -n +4  guetzli-*.csv" using 3:5:(1.0) w lp ls 5 smooth acsplines  title 'guetzli', \
+    "< tail -q -n +4  flif-lossy-*.csv" using 3:5:(1.0) w lp ls 6 smooth acsplines title 'flif-lossy', \
+	"< tail -q -n +4  bpg-*.csv" using 3:5:(1.0) w lp ls 7 smooth acsplines title 'bpg(x265)', \
+	"< tail -q -n +4  bpg-jctvc-*.csv" using 3:5:(1.0) w lp ls 8 smooth acsplines title 'bpg(jctvc)', \
+	"< tail -q -n +4  mozjpeg-*.csv" using 3:5:(1.0) w lp ls 9 smooth acsplines title 'MozJPEG', \
+	"< tail -q -n +4  av1-*.csv" using 4:6:(1.0) w lp ls 11 smooth acsplines title 'AV1', \
+	"< tail -q -n +4  webp-*.csv" using 3:5:(1.0) w lp ls 1 smooth acsplines title 'webp-near-lossless-40/60', \
+	"< tail -q -n +4  webp-lossy-*.csv" using 3:5:(1.0) w lp ls 2 smooth acsplines  title 'webp-lossy'
+EOFMarker
+}
 
 
 function libjpeg_test
@@ -297,17 +381,17 @@ function av1_test
 function libjpeg_2000_test
 {
   echo "Analysing JPEG 2000 images optimized by OpenJPEG(JPEG 2000)[Source :$x]"
-  rm -rf libjpeg-2000-"$filename".csv
+  rm -rf libjpeg2000-"$filename".csv
   #Start csv generation
-  echo "Test_Image,Original_Size" >> libjpeg-2000-"$filename".csv
-  echo "$filename","$orig_size" >> libjpeg-2000-"$filename".csv
-  echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> libjpeg-2000-"$filename".csv
+  echo "Test_Image,Original_Size" >> libjpeg2000-"$filename".csv
+  echo "$filename","$orig_size" >> libjpeg2000-"$filename".csv
+  echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> libjpeg2000-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating JPEG 2000 images optimized by LibJPEG[Source :$x] in parallel"
     parallel --will-cite 'opj_compress -i "{1}".ppm -r "{2}" -o "{3}"_openjpeg_q"{2}".jp2 -I -r "{2}"' ::: "$x" ::: {0..25}  ::: "$filename"
     parallel --will-cite 'opj_decompress -i "{3}"_openjpeg_q"{2}".jp2  -o "{3}"_openjpeg_q"{2}".png' ::: "$x" ::: {0..25}  ::: "$filename"
   fi
-  echo "Perform comparisions and store results in libjpeg-2000-$filename.csv"
+  echo "Perform comparisions and store results in libjpeg2000-$filename.csv"
   for ((i=0; i<=25; i++))
   do
     #opj_compress -i "$x".ppm -r "$i" -o "$filename"_openjpeg_q"$i".jp2 -I -r "$i"
@@ -320,7 +404,7 @@ function libjpeg_2000_test
     reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
     printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
     printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> libjpeg-2000-"$filename".csv
+    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> libjpeg2000-"$filename".csv
   done
 #End csv generation
 }
@@ -617,6 +701,7 @@ function main
   only_flif_lossy=false
   only_plots=false
   only_csv=false
+  combine_plots=false
   for x in "$@"; do
     if [ "${x: 0:2}" == "--" ]; then
       has_options=true
@@ -695,6 +780,12 @@ function main
         only_csv=true
         continue
       fi
+	   
+	  
+	  if [ "$x" == "--combine-plots" ]; then
+        combine_plots=true
+        continue
+      fi
 
     done
 
@@ -766,8 +857,14 @@ function main
     rm -rf "$filename"_butteraugli_plot.png "$filename"_ssimulacra_plot.png
     plotcsv_graph "$filename"_butteraugli_plot.png "$filename"  "Source: $filename"
     plotcsv_graph_ssimulacra "$filename"_ssimulacra_plot.png  "$filename" "Source: $filename"
-    files_to_zip+="libjpeg-${filename}.csv libjpeg-2000-${filename}.csv guetzli-${filename}.csv pik-${filename}.csv av1-${filename}.csv webp-${filename}.csv webp-lossy-${filename}.csv  bpg-${filename}.csv flif-lossy-${filename}.csv mozjpeg-${filename}.csv bpg-jctvc-${filename}.csv ${filename}_butteraugli_plot.png ${filename}_ssimulacra_plot.png "
+    files_to_zip+="${x} libjpeg-${filename}.csv libjpeg2000-${filename}.csv guetzli-${filename}.csv pik-${filename}.csv av1-${filename}.csv webp-${filename}.csv webp-lossy-${filename}.csv  bpg-${filename}.csv flif-lossy-${filename}.csv mozjpeg-${filename}.csv bpg-jctvc-${filename}.csv ${filename}_butteraugli_plot.png ${filename}_ssimulacra_plot.png "
   done
+  
+    if [ "$combine_plots" = true ]; then
+	plotcsv_graph_merge butteraugli_plot_merge.png "Merge Butteraugli Plot"
+	plotcsv_graph_ssimulacra_merge ssimulacra_plot_merge.png  "Merge Ssimulacra Plot"
+	files_to_zip+="butteraugli_plot_merge.png ssimulacra_plot_merge.png "
+	fi
 
 
   #Create a zip to store the results
