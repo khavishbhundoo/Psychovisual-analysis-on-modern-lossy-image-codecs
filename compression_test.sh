@@ -32,7 +32,7 @@ function usage()
   echo "--only-av1              Redo the test[image generation + csv ] only for av1 and regenerate plots"
   echo "--only-plots            Only regenerate plots"
   echo "--only-csv              Only regenerate csv files and plots"
-  echo "--combine-plots         Merge results of multiple images to create a single butteraugli and ssimulacra plot"
+  #echo "--combine-plots         Merge results of multiple images to create a single butteraugli and ssimulacra plot"
   exit 1
 
 }
@@ -172,13 +172,13 @@ function plotcsv_graph
     "libjpeg-$2.csv" using 3:4 w lp ls 4 title 'libjpeg', \
 	"libjpeg2000-$2.csv" using 3:4 w lp ls 10 title 'OpenJPEG(JPEG 2000)', \
     "guetzli-$2.csv" using 3:4 w lp ls 5 title 'guetzli', \
-    "flif-lossy-$2.csv" using 3:4 w lp ls 6 title 'flif-lossy', \
+    "flif_lossy-$2.csv" using 3:4 w lp ls 6 title 'flif-lossy', \
 	"bpg-$2.csv" using 3:4 w lp ls 7 title 'bpg(x265)', \
-	"bpg-jctvc-$2.csv" using 3:4 w lp ls 8 title 'bpg(jctvc)', \
+	"bpg_jctvc-$2.csv" using 3:4 w lp ls 8 title 'bpg(jctvc)', \
 	"mozjpeg-$2.csv" using 3:4 w lp ls 9 title 'MozJPEG', \
 	"av1-$2.csv" using 4:5 w lp ls 11 title 'AV1', \
 	"webp-$2.csv" using 3:4 w lp ls 1 title 'webp-near-lossless-40/60', \
-	"webp-lossy-$2.csv" using 3:4 w lp ls 2 title 'webp-lossy', \
+	"webp_lossy-$2.csv" using 3:4 w lp ls 2 title 'webp-lossy', \
 	1/0 t "Reference Size" lt 0
 EOFMarker
 }
@@ -215,13 +215,13 @@ function plotcsv_graph_merge
 	"< tail -q -n +4  libjpeg-*.csv" using 3:4:(1.0) w lp ls 4 smooth acsplines title 'libjpeg', \
 	"< tail -q -n +4  libjpeg2000-*.csv" using 3:4:(1.0) w lp ls 10 smooth acsplines title 'OpenJPEG(JPEG 2000)', \
 	"< tail -q -n +4  guetzli-*.csv" using 3:4:(1.0) w lp ls 5 smooth acsplines  title 'guetzli', \
-    "< tail -q -n +4  flif-lossy-*.csv" using 3:4:(1.0) w lp ls 6 smooth acsplines title 'flif-lossy', \
+    "< tail -q -n +4  flif_lossy-*.csv" using 3:4:(1.0) w lp ls 6 smooth acsplines title 'flif-lossy', \
 	"< tail -q -n +4  bpg-*.csv" using 3:4:(1.0) w lp ls 7 smooth acsplines title 'bpg(x265)', \
-	"< tail -q -n +4  bpg-jctvc-*.csv" using 3:4:(1.0) w lp ls 8 smooth acsplines title 'bpg(jctvc)', \
+	"< tail -q -n +4  bpg_jctvc-*.csv" using 3:4:(1.0) w lp ls 8 smooth acsplines title 'bpg(jctvc)', \
 	"< tail -q -n +4  mozjpeg-*.csv" using 3:4:(1.0) w lp ls 9 smooth acsplines title 'MozJPEG', \
 	"< tail -q -n +4  av1-*.csv" using 4:5:(1.0) w lp ls 11 smooth acsplines title 'AV1', \
 	"< tail -q -n +4  webp-*.csv" using 3:4:(1.0) w lp ls 1 smooth acsplines title 'webp-near-lossless-40/60', \
-	"< tail -q -n +4  webp-lossy-*.csv" using 3:4:(1.0) w lp ls 2 smooth acsplines  title 'webp-lossy'
+	"< tail -q -n +4  webp_lossy-*.csv" using 3:4:(1.0) w lp ls 2 smooth acsplines  title 'webp-lossy'
 EOFMarker
 }
 
@@ -257,13 +257,13 @@ function plotcsv_graph_ssimulacra
     "libjpeg-$2.csv" using 3:5 w lp ls 4 title 'libjpeg', \
 	"libjpeg2000-$2.csv" using 3:5 w lp ls 10 title 'OpenJPEG(JPEG 2000)', \
     "guetzli-$2.csv" using 3:5 w lp ls 5 title 'guetzli', \
-    "flif-lossy-$2.csv" using 3:5 w lp ls 6 title 'flif-lossy', \
+    "flif_lossy-$2.csv" using 3:5 w lp ls 6 title 'flif-lossy', \
 	"bpg-$2.csv" using 3:5 w lp ls 7 title 'bpg(x265)', \
-	"bpg-jctvc-$2.csv" using 3:5 w lp ls 8 title 'bpg(jctvc)', \
+	"bpg_jctvc-$2.csv" using 3:5 w lp ls 8 title 'bpg(jctvc)', \
 	"mozjpeg-$2.csv" using 3:5 w lp ls 9 title 'MozJPEG', \
 	"av1-$2.csv" using 4:6 w lp ls 11 title 'AV1', \
 	"webp-$2.csv" using 3:5 w lp ls 1 title 'webp-near-lossless-40/60', \
-	"webp-lossy-$2.csv" using 3:5 w lp ls 2 title 'webp-lossy', \
+	"webp_lossy-$2.csv" using 3:5 w lp ls 2 title 'webp-lossy', \
 	1/0 t "Reference Size" lt 0
 EOFMarker
 }
@@ -300,13 +300,13 @@ function plotcsv_graph_ssimulacra_merge
 	"< tail -q -n +4  libjpeg-*.csv" using 3:5:(1.0) w lp ls 4 smooth acsplines title 'libjpeg', \
 	"< tail -q -n +4  libjpeg2000-*.csv" using 3:5:(1.0) w lp ls 10 smooth acsplines title 'OpenJPEG(JPEG 2000)', \
 	"< tail -q -n +4  guetzli-*.csv" using 3:5:(1.0) w lp ls 5 smooth acsplines  title 'guetzli', \
-    "< tail -q -n +4  flif-lossy-*.csv" using 3:5:(1.0) w lp ls 6 smooth acsplines title 'flif-lossy', \
+    "< tail -q -n +4  flif_lossy-*.csv" using 3:5:(1.0) w lp ls 6 smooth acsplines title 'flif-lossy', \
 	"< tail -q -n +4  bpg-*.csv" using 3:5:(1.0) w lp ls 7 smooth acsplines title 'bpg(x265)', \
-	"< tail -q -n +4  bpg-jctvc-*.csv" using 3:5:(1.0) w lp ls 8 smooth acsplines title 'bpg(jctvc)', \
+	"< tail -q -n +4  bpg_jctvc-*.csv" using 3:5:(1.0) w lp ls 8 smooth acsplines title 'bpg(jctvc)', \
 	"< tail -q -n +4  mozjpeg-*.csv" using 3:5:(1.0) w lp ls 9 smooth acsplines title 'MozJPEG', \
 	"< tail -q -n +4  av1-*.csv" using 4:6:(1.0) w lp ls 11 smooth acsplines title 'AV1', \
 	"< tail -q -n +4  webp-*.csv" using 3:5:(1.0) w lp ls 1 smooth acsplines title 'webp-near-lossless-40/60', \
-	"< tail -q -n +4  webp-lossy-*.csv" using 3:5:(1.0) w lp ls 2 smooth acsplines  title 'webp-lossy'
+	"< tail -q -n +4  webp_lossy-*.csv" using 3:5:(1.0) w lp ls 2 smooth acsplines  title 'webp-lossy'
 EOFMarker
 }
 
@@ -536,17 +536,17 @@ function webp_near_lossless
 function webp_lossy
 {
   echo "Analysing Webp images(Lossy)[Source :$x]"
-  rm -rf webp-lossy-"$filename".csv
+  rm -rf webp_lossy-"$filename".csv
 #Start csv generation
-  echo "Test_Image,Original_Size" >> webp-lossy-"$filename".csv
-  echo "$filename","$orig_size" >> webp-lossy-"$filename".csv
-  echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> webp-lossy-"$filename".csv
+  echo "Test_Image,Original_Size" >> webp_lossy-"$filename".csv
+  echo "$filename","$orig_size" >> webp_lossy-"$filename".csv
+  echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> webp_lossy-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating Webp images(Lossy)[Source :$x] in parallel"
     parallel  --will-cite 'cwebp -sharp_yuv   -mt -quiet -q "{1}" -m 6 "{2}"  -o "{3}"_webp_lossy_q"{1}".webp' ::: {100..70}  ::: "$x" ::: "$filename"
     parallel  --will-cite 'dwebp -mt -quiet "{1}"_webp_lossy_q{2}.webp -o "{1}"_webp_lossy_q{2}.png' ::: "$filename" ::: {100..70}
   fi
-  echo "Perform comparisions and store results in webp-lossy-$filename.csv"
+  echo "Perform comparisions and store results in webp_lossy-$filename.csv"
   for ((i=100; i>=70; i--))
   do
     #cwebp -sharp_yuv -pass 10 -mt -quiet -q "$i" -m 6 "$x"  -o "$filename"_webp_lossy_q"$i".webp
@@ -560,7 +560,7 @@ function webp_lossy
     reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
     printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
     printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> webp-lossy-"$filename".csv
+    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> webp_lossy-"$filename".csv
   done
 #End csv generation
 }
@@ -600,17 +600,17 @@ function bpg_lossy
 function bpg_lossy_jctvc
 {
   echo "Analysing BPG images(jctvc encoder - lossy)[Source :$x]"
-  rm -rf bpg-jctvc-"$filename".csv
+  rm -rf bpg_jctvc-"$filename".csv
   #Start csv generation
-  echo "Test_Image,Original_Size" >> bpg-jctvc-"$filename".csv
-  echo "$filename","$orig_size" >> bpg-jctvc-"$filename".csv
-  echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> bpg-jctvc-"$filename".csv
+  echo "Test_Image,Original_Size" >> bpg_jctvc-"$filename".csv
+  echo "$filename","$orig_size" >> bpg_jctvc-"$filename".csv
+  echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> bpg_jctvc-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating BPG images(jctvc encoder - lossy)[Source :$x] in parallel"
     parallel --will-cite 'bpgenc -q "{1}" -f 444  -m 9 -e jctvc "{2}" -o "{3}"_bpg_jctvc_q{1}.bpg' ::: {0..37}  ::: "$x" ::: "$filename"
     parallel --will-cite 'bpgdec "{1}"_bpg_jctvc_q"{2}".bpg -o "{1}"_bpg_jctvc_q{2}.png' ::: "$filename" ::: {0..37}
   fi
-  echo "Perform comparisions and store results in bpg-jctvc-$filename.csv"
+  echo "Perform comparisions and store results in bpg_jctvc-$filename.csv"
   for ((i=0; i<=37; i++))
   do
     #bpgenc -q "$i" -f 444  -m 9 -e jctvc "$x" -o "$filename"_bpg_jctvc_q"$i".bpg
@@ -624,7 +624,7 @@ function bpg_lossy_jctvc
     reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
     printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
     printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> bpg-jctvc-"$filename".csv
+    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> bpg_jctvc-"$filename".csv
   done
 #End csv generation
 }
@@ -632,17 +632,17 @@ function bpg_lossy_jctvc
 function flif_lossy
 {
   echo "Analysing FLIF images(Lossy)[Source :$x]"
-  rm -rf flif-lossy-"$filename".csv
+  rm -rf flif_lossy-"$filename".csv
   #Start csv generation
-  echo "Test_Image,Original_Size" >> flif-lossy-"$filename".csv
-  echo "$filename","$orig_size" >> flif-lossy-"$filename".csv
-  echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> flif-lossy-"$filename".csv
+  echo "Test_Image,Original_Size" >> flif_lossy-"$filename".csv
+  echo "$filename","$orig_size" >> flif_lossy-"$filename".csv
+  echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> flif_lossy-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating FLIF images(Lossy)[Source :$x] in parallel"
     parallel --will-cite 'flif --overwrite -e -E100 -Q"{1}"  "{2}" "{3}"_lossy_q"{1}".flif' ::: {100..0}  ::: "$x" ::: "$filename"
     parallel --will-cite 'flif -d "{1}"_lossy_q"{2}".flif "{1}"_flif_lossy_q{2}.png' ::: "$filename" ::: {100..0}
   fi
-  echo "Perform comparisions and store results in flif-lossy-$filename.csv"
+  echo "Perform comparisions and store results in flif_lossy-$filename.csv"
   for ((i=100; i>=0; i--))
   do
     #flif --overwrite -e -E100 -Q"$i"  "$x" "$filename"_lossy_q"$i".flif
@@ -656,7 +656,7 @@ function flif_lossy
     reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
     printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
     printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> flif-lossy-"$filename".csv
+    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> flif_lossy-"$filename".csv
   done
 #End csv generation
 }
@@ -859,7 +859,7 @@ function main
     rm -rf "$filename"_butteraugli_plot.png "$filename"_ssimulacra_plot.png
     plotcsv_graph "$filename"_butteraugli_plot.png "$filename"  "Source: $filename"
     plotcsv_graph_ssimulacra "$filename"_ssimulacra_plot.png  "$filename" "Source: $filename"
-    files_to_zip+="${x} libjpeg-${filename}.csv libjpeg2000-${filename}.csv guetzli-${filename}.csv pik-${filename}.csv av1-${filename}.csv webp-${filename}.csv webp-lossy-${filename}.csv  bpg-${filename}.csv flif-lossy-${filename}.csv mozjpeg-${filename}.csv bpg-jctvc-${filename}.csv ${filename}_butteraugli_plot.png ${filename}_ssimulacra_plot.png "
+    files_to_zip+="${x} libjpeg-${filename}.csv libjpeg2000-${filename}.csv guetzli-${filename}.csv pik-${filename}.csv av1-${filename}.csv webp-${filename}.csv webp_lossy-${filename}.csv  bpg-${filename}.csv flif_lossy-${filename}.csv mozjpeg-${filename}.csv bpg_jctvc-${filename}.csv ${filename}_butteraugli_plot.png ${filename}_ssimulacra_plot.png "
   done
 
   if [ "$combine_plots" = true ]; then
