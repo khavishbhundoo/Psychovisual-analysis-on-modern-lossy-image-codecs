@@ -7,7 +7,6 @@
 # Performs compression tests using multiple encoders#
 #####################################################
 
-#TODO : Taking a butteraugli score of 1.0 as a reference, generate a heatmap of each codec that is just above that byte size
 
 #Check if a command line tool is installed on the server
 function exists()
@@ -19,20 +18,21 @@ function usage()
 {
   echo "Usage: $(basename "${BASH_SOURCE}") [options] image1.png image2.png ..."
   echo "Main Options"
-  echo "--only-pik              Redo the test[image generation + csv ] only for pik and regenerate plots"
-  echo "--only-libjpeg          Redo the test[image generation + csv ] only for libjpeg and regenerate plots"
-  echo "--only-libjpeg-2000     Redo the test[image generation + csv ] only for libjpeg 2000 and regenerate plots"
-  echo "--only-guetzli          Redo the test[image generation + csv ] only for guezli and regenerate plots"
-  echo "--only-flif-lossy       Redo the test[image generation + csv ] only for flif(lossy) and regenerate plots"
-  echo "--only-webp             Redo the test[image generation + csv ] only for webp(near-lossless) and regenerate plots"
-  echo "--only-webp-lossy       Redo the test[image generation + csv ] only for webp(lossy) and regenerate plots"
-  echo "--only-bpg-lossy        Redo the test[image generation + csv ] only for bgp(lossy) and regenerate plots"
-  echo "--only-bpg-lossy-jctvc  Redo the test[image generation + csv ] only for bgp(lossy) and regenerate plots"
-  echo "--only-mozjpeg          Redo the test[image generation + csv ] only for mozjpeg and regenerate plots"
-  echo "--only-av1              Redo the test[image generation + csv ] only for av1 and regenerate plots"
-  echo "--only-plots            Only regenerate plots"
-  echo "--only-csv              Only regenerate csv files and plots"
-  #echo "--combine-plots         Merge results of multiple images to create a single butteraugli and ssimulacra plot"
+  echo "--only-pik              	Redo the test[image generation + csv ] only for pik and regenerate plots"
+  echo "--only-libjpeg          	Redo the test[image generation + csv ] only for libjpeg and regenerate plots"
+  echo "--only-libjpeg-2000     	Redo the test[image generation + csv ] only for libjpeg 2000 and regenerate plots"
+  echo "--only-guetzli          	Redo the test[image generation + csv ] only for guezli and regenerate plots"
+  echo "--only-flif-lossy       	Redo the test[image generation + csv ] only for flif(lossy) and regenerate plots"
+  echo "--only-webp             	Redo the test[image generation + csv ] only for webp(near-lossless) and regenerate plots"
+  echo "--only-webp-lossy       	Redo the test[image generation + csv ] only for webp(lossy) and regenerate plots"
+  echo "--only-bpg-lossy        	Redo the test[image generation + csv ] only for bgp(lossy) and regenerate plots"
+  echo "--only-bpg-lossy-jctvc  	Redo the test[image generation + csv ] only for bgp(lossy) and regenerate plots"
+  echo "--only-mozjpeg          	Redo the test[image generation + csv ] only for mozjpeg and regenerate plots"
+  echo "--only-av1              	Redo the test[image generation + csv ] only for av1 and regenerate plots"
+  echo "--only-plots            	Only regenerate plots"
+  echo "--only-csv              	Only regenerate csv files and plots"
+  echo "--combine-plots         	Merge results of multiple images to create a single butteraugli and ssimulacra plot"
+  echo "--heatmap_target_size=SIZE  Generate butteraugli heatmaps for a compressed image just above SIZE for each encoder"
   exit 1
 
 }
@@ -118,6 +118,11 @@ function check_dependancies()
     missing_deps=true
   fi
 
+  if ! exists datamash; then
+    echo 'datamash is not installed...exiting'
+    missing_deps=true
+  fi
+
   if ! exists parallel; then
     echo 'gnu parallel is not installed...exiting'
     missing_deps=true
@@ -144,18 +149,18 @@ function plotcsv_graph
 {
   gnuplot -persist <<-EOFMarker
     set terminal pngcairo size 1280,1024 enhanced font "Helvetica,20"
-    # line styles
-    set style line 1 lt 1 lw 2 lc rgb '#D53E4F' ps 0 # red
-    set style line 2 lt 1 lw 2 lc rgb '#F46D43' ps 0 # orange
-    set style line 3 lt 1 lw 2 lc rgb '#FDAE61' ps 0 # pale orange
-    set style line 4 lt 1 lw 2 lc rgb '#FEE08B' ps 0 # pale yellow-orange
-    set style line 5 lt 1 lw 2 lc rgb '#E6F598' ps 0 # pale yellow-green
-    set style line 6 lt 1 lw 2 lc rgb '#ABDDA4' ps 0 # pale green
-    set style line 7 lt 1 lw 2 lc rgb '#66C2A5' ps 0 # green
-    set style line 8 lt 1 lw 2 lc rgb '#3288BD' ps 0 # blue
-	set style line 9 lt 1 lw 2 lc rgb '#6D32BD' ps 0 # purple
-	set style line 10 lt 1 lw 2 lc rgb '#77776e' ps 0 # grey
-    set style line 11 lt 1 lw 2 lc rgb '#914d8f' ps 0 # pink
+	set style line 1 lt 1 lw 2 lc rgb '#00707A' ps 0 # dark green
+    set style line 2 lt 1 lw 2 lc rgb '#8710A8' ps 0 # purple
+    set style line 3 lt 1 lw 2 lc rgb '#005ACB' ps 0 # dark blue
+    set style line 4 lt 1 lw 2 lc rgb '#099BFC' ps 0 # light blue
+    set style line 5 lt 1 lw 2 lc rgb '#FF75FE' ps 0 # pink
+    set style line 6 lt 1 lw 2 lc rgb '#08D8DD' ps 0 # cyan
+    set style line 7 lt 1 lw 2 lc rgb '#A90B3C' ps 0 # brown
+    set style line 8 lt 1 lw 2 lc rgb '#F67A4E' ps 0 # orange 
+	set style line 9 lt 1 lw 2 lc rgb '#09B460' ps 0 # dark green
+	set style line 10 lt 1 lw 2 lc rgb '#EFEF3A' ps 0 # yellow 
+    set style line 11 lt 1 lw 2 lc rgb '#A6F687' ps 0 # light green
+	set style line 12 lt 1 lw 2 lc rgb '#FBE5BC' ps 0 # light brown
     set tics nomirror
 	set ytics 1
 	set mytics 10
@@ -168,60 +173,18 @@ function plotcsv_graph
 	set xtics font ", 12"
 	set xrange [:8]
 	set arrow from $reference_jpg_bpp, graph 0 to $reference_jpg_bpp, graph 1 nohead lt 0
-	plot "pik-$2.csv" using 3:4 w lp ls 3 title 'pik', \
-    "libjpeg-$2.csv" using 3:4 w lp ls 4 title 'libjpeg', \
-	"libjpeg2000-$2.csv" using 3:4 w lp ls 10 title 'OpenJPEG(JPEG 2000)', \
-    "guetzli-$2.csv" using 3:4 w lp ls 5 title 'guetzli', \
-    "flif_lossy-$2.csv" using 3:4 w lp ls 6 title 'flif-lossy', \
-	"bpg-$2.csv" using 3:4 w lp ls 7 title 'bpg(x265)', \
-	"bpg_jctvc-$2.csv" using 3:4 w lp ls 8 title 'bpg(jctvc)', \
-	"mozjpeg-$2.csv" using 3:4 w lp ls 9 title 'MozJPEG', \
-	"av1-$2.csv" using 4:5 w lp ls 11 title 'AV1', \
-	"webp-$2.csv" using 3:4 w lp ls 1 title 'webp-near-lossless-40/60', \
-	"webp_lossy-$2.csv" using 3:4 w lp ls 2 title 'webp-lossy', \
+	plot "pik-$2.csv" using 3:4 w l ls 1 title 'pik', \
+    "libjpeg-$2.csv" using 3:4 w l ls 2  title 'libjpeg', \
+	"libjpeg2000-$2.csv" using 3:4 w l ls 3  title 'OpenJPEG(JPEG 2000)', \
+    "guetzli-$2.csv" using 3:4 w l ls 4 title 'guetzli', \
+    "flif_lossy-$2.csv" using 3:4 w l ls 5 title 'flif-lossy', \
+	"bpg-$2.csv" using 3:4 w l ls 6 title 'bpg(x265)', \
+	"bpg_jctvc-$2.csv" using 3:4 w l ls 7 title 'bpg(jctvc)', \
+	"mozjpeg-$2.csv" using 3:4 w l ls 8  title 'MozJPEG', \
+	"av1-$2.csv" using 4:5 w l ls 9 title 'AV1', \
+	"webp-$2.csv" using 3:4 w l ls 10 title 'webp-near-lossless-40/60', \
+	"webp_lossy-$2.csv" using 3:4 w l ls 12 title 'webp-lossy', \
 	1/0 t "Reference Size" lt 0
-EOFMarker
-}
-
-
-function plotcsv_graph_merge
-{
-  gnuplot -persist <<-EOFMarker
-    set terminal pngcairo size 1280,1024 enhanced font "Helvetica,20"
-    # line styles
-    set style line 1 lt 1 lw 2 lc rgb '#D53E4F' ps 0 # red
-    set style line 2 lt 1 lw 2 lc rgb '#F46D43' ps 0 # orange
-    set style line 3 lt 1 lw 2 lc rgb '#FDAE61' ps 0 # pale orange
-    set style line 4 lt 1 lw 2 lc rgb '#FEE08B' ps 0 # pale yellow-orange
-    set style line 5 lt 1 lw 2 lc rgb '#E6F598' ps 0 # pale yellow-green
-    set style line 6 lt 1 lw 2 lc rgb '#ABDDA4' ps 0 # pale green
-    set style line 7 lt 1 lw 2 lc rgb '#66C2A5' ps 0 # green
-    set style line 8 lt 1 lw 2 lc rgb '#3288BD' ps 0 # blue
-	set style line 9 lt 1 lw 2 lc rgb '#6D32BD' ps 0 # purple
-	set style line 10 lt 1 lw 2 lc rgb '#77776e' ps 0 # grey
-    set style line 11 lt 1 lw 2 lc rgb '#914d8f' ps 0 # pink
-    set tics nomirror
-	set ytics 1
-	set mytics 10
-    set output "$1"
-	set title  "$2"
-    set xlabel 'Bits per pixel(bpp)'
-    set ylabel 'butteraugli score'
-	set style func linespoints
-	set datafile separator ","
-	set xtics font ", 12"
-	set xrange [:8]
-	plot "< tail -q -n +4  pik-*.csv" using 3:4:(1.0) w lp ls 3 smooth acsplines title 'pik', \
-	"< tail -q -n +4  libjpeg-*.csv" using 3:4:(1.0) w lp ls 4 smooth acsplines title 'libjpeg', \
-	"< tail -q -n +4  libjpeg2000-*.csv" using 3:4:(1.0) w lp ls 10 smooth acsplines title 'OpenJPEG(JPEG 2000)', \
-	"< tail -q -n +4  guetzli-*.csv" using 3:4:(1.0) w lp ls 5 smooth acsplines  title 'guetzli', \
-    "< tail -q -n +4  flif_lossy-*.csv" using 3:4:(1.0) w lp ls 6 smooth acsplines title 'flif-lossy', \
-	"< tail -q -n +4  bpg-*.csv" using 3:4:(1.0) w lp ls 7 smooth acsplines title 'bpg(x265)', \
-	"< tail -q -n +4  bpg_jctvc-*.csv" using 3:4:(1.0) w lp ls 8 smooth acsplines title 'bpg(jctvc)', \
-	"< tail -q -n +4  mozjpeg-*.csv" using 3:4:(1.0) w lp ls 9 smooth acsplines title 'MozJPEG', \
-	"< tail -q -n +4  av1-*.csv" using 4:5:(1.0) w lp ls 11 smooth acsplines title 'AV1', \
-	"< tail -q -n +4  webp-*.csv" using 3:4:(1.0) w lp ls 1 smooth acsplines title 'webp-near-lossless-40/60', \
-	"< tail -q -n +4  webp_lossy-*.csv" using 3:4:(1.0) w lp ls 2 smooth acsplines  title 'webp-lossy'
 EOFMarker
 }
 
@@ -229,18 +192,18 @@ function plotcsv_graph_ssimulacra
 {
   gnuplot -persist <<-EOFMarker
     set terminal pngcairo size 1280,1024 enhanced font "Helvetica,20"
-    # line styles
-    set style line 1 lt 1 lw 2 lc rgb '#D53E4F' ps 0 # red
-    set style line 2 lt 1 lw 2 lc rgb '#F46D43' ps 0 # orange
-    set style line 3 lt 1 lw 2 lc rgb '#FDAE61' ps 0 # pale orange
-    set style line 4 lt 1 lw 2 lc rgb '#FEE08B' ps 0 # pale yellow-orange
-    set style line 5 lt 1 lw 2 lc rgb '#E6F598' ps 0 # pale yellow-green
-    set style line 6 lt 1 lw 2 lc rgb '#ABDDA4' ps 0 # pale green
-    set style line 7 lt 1 lw 2 lc rgb '#66C2A5' ps 0 # green
-    set style line 8 lt 1 lw 2 lc rgb '#3288BD' ps 0 # blue
-	set style line 9 lt 1 lw 2 lc rgb '#6D32BD' ps 0 # purple
-	set style line 10 lt 1 lw 2 lc rgb '#77776e' ps 0 # grey
-    set style line 11 lt 1 lw 2 lc rgb '#914d8f' ps 0 # pink
+	set style line 1 lt 1 lw 2 lc rgb '#00707A' ps 0 # dark green
+    set style line 2 lt 1 lw 2 lc rgb '#8710A8' ps 0 # purple
+    set style line 3 lt 1 lw 2 lc rgb '#005ACB' ps 0 # dark blue
+    set style line 4 lt 1 lw 2 lc rgb '#099BFC' ps 0 # light blue
+    set style line 5 lt 1 lw 2 lc rgb '#FF75FE' ps 0 # pink
+    set style line 6 lt 1 lw 2 lc rgb '#08D8DD' ps 0 # cyan
+    set style line 7 lt 1 lw 2 lc rgb '#A90B3C' ps 0 # brown
+    set style line 8 lt 1 lw 2 lc rgb '#F67A4E' ps 0 # orange 
+	set style line 9 lt 1 lw 2 lc rgb '#09B460' ps 0 # dark green
+	set style line 10 lt 1 lw 2 lc rgb '#EFEF3A' ps 0 # yellow 
+    set style line 11 lt 1 lw 2 lc rgb '#A6F687' ps 0 # light green
+	set style line 12 lt 1 lw 2 lc rgb '#FBE5BC' ps 0 # light brown
     set tics nomirror
 	set ytics 0.01
 	set mytics 10
@@ -248,43 +211,81 @@ function plotcsv_graph_ssimulacra
 	set title  "$3"
     set xlabel 'Bits per pixel(bpp)'
     set ylabel 'ssimulacra score'
-	set style func linespoints
 	set datafile separator ","
 	set xtics font ", 12"
 	set xrange [:8]
 	set arrow from $reference_jpg_bpp, graph 0 to $reference_jpg_bpp, graph 1 nohead lt 0
-	plot "pik-$2.csv" using 3:5 w lp ls 3 title 'pik', \
-    "libjpeg-$2.csv" using 3:5 w lp ls 4 title 'libjpeg', \
-	"libjpeg2000-$2.csv" using 3:5 w lp ls 10 title 'OpenJPEG(JPEG 2000)', \
-    "guetzli-$2.csv" using 3:5 w lp ls 5 title 'guetzli', \
-    "flif_lossy-$2.csv" using 3:5 w lp ls 6 title 'flif-lossy', \
-	"bpg-$2.csv" using 3:5 w lp ls 7 title 'bpg(x265)', \
-	"bpg_jctvc-$2.csv" using 3:5 w lp ls 8 title 'bpg(jctvc)', \
-	"mozjpeg-$2.csv" using 3:5 w lp ls 9 title 'MozJPEG', \
-	"av1-$2.csv" using 4:6 w lp ls 11 title 'AV1', \
-	"webp-$2.csv" using 3:5 w lp ls 1 title 'webp-near-lossless-40/60', \
-	"webp_lossy-$2.csv" using 3:5 w lp ls 2 title 'webp-lossy', \
+	plot "pik-$2.csv" using 3:5 w l ls 1 title 'pik', \
+    "libjpeg-$2.csv" using 3:5 w l ls 2 title 'libjpeg', \
+	"libjpeg2000-$2.csv" using 3:5 w l ls 3 title 'OpenJPEG(JPEG 2000)', \
+    "guetzli-$2.csv" using 3:5 w l ls 4 title 'guetzli', \
+    "flif_lossy-$2.csv" using 3:5 w l ls 5 title 'flif-lossy', \
+	"bpg-$2.csv" using 3:5 w l ls 6 title 'bpg(x265)', \
+	"bpg_jctvc-$2.csv" using 3:5 w l ls 7 title 'bpg(jctvc)', \
+	"mozjpeg-$2.csv" using 3:5 w l ls 8 title 'MozJPEG', \
+	"av1-$2.csv" using 4:6 w l ls 9 title 'AV1', \
+	"webp-$2.csv" using 3:5 w l ls 10 title 'webp-near-lossless-40/60', \
+	"webp_lossy-$2.csv" using 3:5 w l ls 12 title 'webp-lossy', \
 	1/0 t "Reference Size" lt 0
 EOFMarker
 }
 
+function plotcsv_graph_merge
+{
+  gnuplot -persist <<-EOFMarker
+	set terminal pngcairo size 1280,1024 enhanced font "Helvetica,20"
+	set style line 1 lt 1 lw 2 lc rgb '#00707A' ps 0 # dark green
+    set style line 2 lt 1 lw 2 lc rgb '#8710A8' ps 0 # purple
+    set style line 3 lt 1 lw 2 lc rgb '#005ACB' ps 0 # dark blue
+    set style line 4 lt 1 lw 2 lc rgb '#099BFC' ps 0 # light blue
+    set style line 5 lt 1 lw 2 lc rgb '#FF75FE' ps 0 # pink
+    set style line 6 lt 1 lw 2 lc rgb '#08D8DD' ps 0 # cyan
+    set style line 7 lt 1 lw 2 lc rgb '#A90B3C' ps 0 # brown
+    set style line 8 lt 1 lw 2 lc rgb '#F67A4E' ps 0 # orange 
+	set style line 9 lt 1 lw 2 lc rgb '#09B460' ps 0 # dark green
+	set style line 10 lt 1 lw 2 lc rgb '#EFEF3A' ps 0 # yellow 
+    set style line 11 lt 1 lw 2 lc rgb '#A6F687' ps 0 # light green
+	set style line 12 lt 1 lw 2 lc rgb '#FBE5BC' ps 0 # light brown
+    set tics nomirror
+	set ytics 1
+	set mytics 10
+    set output "$1"
+	set title  "$2"
+    set xlabel 'Bits per pixel(bpp)'
+    set ylabel 'butteraugli score'
+	set datafile separator ","
+	set xtics font ", 12"
+	set xrange [:8]
+	plot "pik-merge.csv" using 2:3 w l ls 1  title 'pik', \
+    "libjpeg-merge.csv" using 2:3 w l  ls 2 title 'libjpeg', \
+	"libjpeg2000-merge.csv" using 2:3  w l ls 3 title 'OpenJPEG(JPEG 2000)', \
+    "guetzli-merge.csv" using 2:3 w l ls 4 title 'guetzli', \
+    "flif_lossy-merge.csv" using 2:3 w l ls 5 title 'flif-lossy', \
+	"bpg-merge.csv" using 2:3 w l ls 6 title 'bpg(x265)', \
+	"bpg_jctvc-merge.csv" using 2:3 w l ls 7 title 'bpg(jctvc)', \
+	"mozjpeg-merge.csv" using 2:3 w l ls 8 title 'MozJPEG', \
+	"av1-merge.csv" using 3:4 w l ls 9 title 'AV1', \
+	"webp-merge.csv" using 2:3  w l ls 10 title 'webp-near-lossless-40/60', \
+	"webp_lossy-merge.csv" using 2:3 w l ls 12 title 'webp-lossy'
+EOFMarker
+}
 
 function plotcsv_graph_ssimulacra_merge
 {
   gnuplot -persist <<-EOFMarker
     set terminal pngcairo size 1280,1024 enhanced font "Helvetica,20"
-    # line styles
-    set style line 1 lt 1 lw 2 lc rgb '#D53E4F' ps 0 # red
-    set style line 2 lt 1 lw 2 lc rgb '#F46D43' ps 0 # orange
-    set style line 3 lt 1 lw 2 lc rgb '#FDAE61' ps 0 # pale orange
-    set style line 4 lt 1 lw 2 lc rgb '#FEE08B' ps 0 # pale yellow-orange
-    set style line 5 lt 1 lw 2 lc rgb '#E6F598' ps 0 # pale yellow-green
-    set style line 6 lt 1 lw 2 lc rgb '#ABDDA4' ps 0 # pale green
-    set style line 7 lt 1 lw 2 lc rgb '#66C2A5' ps 0 # green
-    set style line 8 lt 1 lw 2 lc rgb '#3288BD' ps 0 # blue
-	set style line 9 lt 1 lw 2 lc rgb '#6D32BD' ps 0 # purple
-	set style line 10 lt 1 lw 2 lc rgb '#77776e' ps 0 # grey
-    set style line 11 lt 1 lw 2 lc rgb '#914d8f' ps 0 # pink
+	set style line 1 lt 1 lw 2 lc rgb '#00707A' ps 0 # dark green
+    set style line 2 lt 1 lw 2 lc rgb '#8710A8' ps 0 # purple
+    set style line 3 lt 1 lw 2 lc rgb '#005ACB' ps 0 # dark blue
+    set style line 4 lt 1 lw 2 lc rgb '#099BFC' ps 0 # light blue
+    set style line 5 lt 1 lw 2 lc rgb '#FF75FE' ps 0 # pink
+    set style line 6 lt 1 lw 2 lc rgb '#08D8DD' ps 0 # cyan
+    set style line 7 lt 1 lw 2 lc rgb '#A90B3C' ps 0 # brown
+    set style line 8 lt 1 lw 2 lc rgb '#F67A4E' ps 0 # orange 
+	set style line 9 lt 1 lw 2 lc rgb '#09B460' ps 0 # dark green
+	set style line 10 lt 1 lw 2 lc rgb '#EFEF3A' ps 0 # yellow 
+    set style line 11 lt 1 lw 2 lc rgb '#A6F687' ps 0 # light green
+	set style line 12 lt 1 lw 2 lc rgb '#FBE5BC' ps 0 # light brown
     set tics nomirror
 	set ytics 0.01
 	set mytics 10
@@ -292,21 +293,20 @@ function plotcsv_graph_ssimulacra_merge
 	set title  "$2"
     set xlabel 'Bits per pixel(bpp)'
     set ylabel 'ssimulacra score'
-	set style func linespoints
 	set datafile separator ","
 	set xtics font ", 12"
 	set xrange [:8]
-	plot "< tail -q -n +4  pik-*.csv" using 3:5:(1.0) w lp ls 3 smooth acsplines title 'pik', \
-	"< tail -q -n +4  libjpeg-*.csv" using 3:5:(1.0) w lp ls 4 smooth acsplines title 'libjpeg', \
-	"< tail -q -n +4  libjpeg2000-*.csv" using 3:5:(1.0) w lp ls 10 smooth acsplines title 'OpenJPEG(JPEG 2000)', \
-	"< tail -q -n +4  guetzli-*.csv" using 3:5:(1.0) w lp ls 5 smooth acsplines  title 'guetzli', \
-    "< tail -q -n +4  flif_lossy-*.csv" using 3:5:(1.0) w lp ls 6 smooth acsplines title 'flif-lossy', \
-	"< tail -q -n +4  bpg-*.csv" using 3:5:(1.0) w lp ls 7 smooth acsplines title 'bpg(x265)', \
-	"< tail -q -n +4  bpg_jctvc-*.csv" using 3:5:(1.0) w lp ls 8 smooth acsplines title 'bpg(jctvc)', \
-	"< tail -q -n +4  mozjpeg-*.csv" using 3:5:(1.0) w lp ls 9 smooth acsplines title 'MozJPEG', \
-	"< tail -q -n +4  av1-*.csv" using 4:6:(1.0) w lp ls 11 smooth acsplines title 'AV1', \
-	"< tail -q -n +4  webp-*.csv" using 3:5:(1.0) w lp ls 1 smooth acsplines title 'webp-near-lossless-40/60', \
-	"< tail -q -n +4  webp_lossy-*.csv" using 3:5:(1.0) w lp ls 2 smooth acsplines  title 'webp-lossy'
+	plot "pik-merge.csv" using 2:4 w l ls 1 title 'pik', \
+    "libjpeg-merge.csv" using 2:4 w l ls 2 title 'libjpeg', \
+	"libjpeg2000-merge.csv" using 2:4 w l ls 3 title 'OpenJPEG(JPEG 2000)', \
+    "guetzli-merge.csv" using 2:4 w l ls 4 title 'guetzli', \
+    "flif_lossy-merge.csv" using 2:4 w l ls 5 title 'flif-lossy', \
+	"bpg-merge.csv" using 2:4 w l ls 6 title 'bpg(x265)', \
+	"bpg_jctvc-merge.csv" using 2:4 w l ls 7 title 'bpg(jctvc)', \
+	"mozjpeg-merge.csv" using 2:4 w l ls 8 title 'MozJPEG', \
+	"av1-merge.csv" using 3:5 w l ls 9 title 'AV1', \
+	"webp-merge.csv" using 2:4 w l ls 10 title 'webp-near-lossless-40/60', \
+	"webp_lossy-merge.csv" using 2:4 w l ls 12 title 'webp-lossy'
 EOFMarker
 }
 
@@ -330,7 +330,7 @@ function libjpeg_test
   do
     #ImageMagick uses an old version of libjpeg so i take the latest one from github for accuracy
     #convert "$x" -quality "$i" -sampling-factor 1x1 "$filename"_libjpeg_q"$i".jpg
-    #jpeg -q "$i" -oz -v -qt 2 -h  "$x".ppm "$filename"_libjpeg_q"$i".jpg
+    #jpeg -q "$i" -oz -v -qt 3 -h  "$x".ppm "$filename"_libjpeg_q"$i".jpg
     new_size=$(wc -c < "$filename"_libjpeg_q"$i".jpg)
     new_size_bpp=$(convert_to_bpp "$new_size")
     butteraugli_score=$(butteraugli "$x" "$filename"_libjpeg_q"$i".jpg)
@@ -345,6 +345,7 @@ function libjpeg_test
 }
 
 #TODO : Add paralleism
+#TODO : make naming of files match that of csv
 function av1_test
 {
   echo "Analysing images optimized by AV1"
@@ -448,7 +449,7 @@ function mozjpeg_test
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> mozjpeg-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating JPEGs optimized by MozJPEG[Source :$x] in parallel"
-    parallel --will-cite 'cjpeg -optimize -dc-scan-opt 2 -sample 1x1 -quality "{1}" -outfile "{2}"_mozjpeg_q{1}.jpg {3}' ::: {100..70}  ::: "$filename" ::: "$x"
+    parallel --will-cite 'cjpeg -sample 1x1 -quality "{1}" -outfile "{2}"_mozjpeg_q{1}.jpg {3}' ::: {100..70}  ::: "$filename" ::: "$x"
   fi
   echo "Perform comparisions and store results in mozjpeg-$filename.csv"
   for ((i=100; i>=70; i--))
@@ -702,6 +703,7 @@ function main
   only_plots=false
   only_csv=false
   combine_plots=false
+  target_size=0
   for x in "$@"; do
     if [ "${x: 0:2}" == "--" ]; then
       has_options=true
@@ -787,23 +789,52 @@ function main
         continue
       fi
 
+      if [[ "$x" =~ ^--heatmap_target_size=.* ]] ; then
+        #set target_size
+        target_size=${x//[!0-9]/}
+        continue
+      fi
+
     done
 
+    if [ "$target_size" -gt 0 ]; then
+      #delete comparison csv
+      for x in "$@"; do
+        if [ "${x: 0:2}" == "--" ]; then
+          continue
+        fi
+        filename=$(basename "$x")
+        rm -rf  comparision-"$filename".csv
+      done
+
+    fi
+
   fi
-  
+
   image_count=0
-  files_to_zip=""
+  files_to_zip=()
+  list_pik=()
+  list_libjpeg=()
+  list_libjpeg2000=()
+  list_guetzli=()
+  list_flif_lossy=()
+  list_bpg=()
+  list_bpg_jctvc=()
+  list_mozjpeg=()
+  list_av1=()
+  list_webp=()
+  list_webp_lossy=()
   for x in "$@"; do
     #skip if we are not dealing with an image
     if [ "${x: 0:2}" == "--" ]; then
       continue
     fi
-	image_count=$(( image_count + 1 ))
+    image_count=$(( image_count + 1 ))
     filename=$(basename "$x")
     orig_size=$(wc -c < "$x")
     #convert "$x" -quality 93 -sampling-factor 1x1  "$filename"_libjpeg_reference.jpg
     convert "$x" "$x".ppm # libjpeg will require ppm file as input
-    jpeg -q 93 -oz -v -qt 2 -h  "$x".ppm "$filename"_libjpeg_reference.jpg
+    jpeg -q 93 -oz -v -qt 3 -h  "$x".ppm "$filename"_libjpeg_reference.jpg &> /dev/null
     reference_jpg_size=$(wc -c < "$filename"_libjpeg_reference.jpg)
     width=$(identify -format "%w" "$x")
     height=$(identify -format "%h" "$x")
@@ -859,19 +890,281 @@ function main
     rm -rf "$filename"_butteraugli_plot.png "$filename"_ssimulacra_plot.png
     plotcsv_graph "$filename"_butteraugli_plot.png "$filename"  "Source: $filename"
     plotcsv_graph_ssimulacra "$filename"_ssimulacra_plot.png  "$filename" "Source: $filename"
-    files_to_zip+="${x} libjpeg-${filename}.csv libjpeg2000-${filename}.csv guetzli-${filename}.csv pik-${filename}.csv av1-${filename}.csv webp-${filename}.csv webp_lossy-${filename}.csv  bpg-${filename}.csv flif_lossy-${filename}.csv mozjpeg-${filename}.csv bpg_jctvc-${filename}.csv ${filename}_butteraugli_plot.png ${filename}_ssimulacra_plot.png "
+    files_to_zip+=("libjpeg-${filename}.csv" "libjpeg2000-${filename}.csv" "guetzli-${filename}.csv" "pik-${filename}.csv" "av1-${filename}.csv" "webp-${filename}.csv" "webp_lossy-${filename}.csv"  "bpg-${filename}.csv" "flif_lossy-${filename}.csv" "mozjpeg-${filename}.csv" "bpg_jctvc-${filename}.csv" "${filename}_butteraugli_plot.png" "${filename}_ssimulacra_plot.png")
+    list_pik+=("pik-${filename}.csv")
+    list_libjpeg+=("libjpeg-${filename}.csv")
+    list_libjpeg2000+=("libjpeg2000-${filename}.csv")
+    list_guetzli+=("guetzli-${filename}.csv")
+    list_flif_lossy+=("flif_lossy-${filename}.csv")
+    list_bpg+=("bpg-${filename}.csv")
+    list_bpg_jctvc+=("bpg_jctvc-${filename}.csv")
+    list_mozjpeg+=("mozjpeg-${filename}.csv")
+    list_av1+=("av1-${filename}.csv")
+    list_webp+=("webp-${filename}.csv")
+    list_webp_lossy+=("webp_lossy-${filename}.csv")
+
+    #Generate heatmap + comparison csv if option is present
+    if [ "$target_size" -gt 0 ]; then
+
+      echo "Generating heatmaps + comparision csv"
+      echo "Encoder,Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> comparision-"$filename".csv
+
+      #pik
+      while read line
+      do
+        i=$(echo "$line" | cut -d',' -f1) #get quality
+        new_size=$(echo "$line" | cut -d',' -f2) #get size
+        new_size_bpp=$(echo "$line" | cut -d',' -f3)
+        butteraugli_score=$(echo "$line" | cut -d',' -f4)
+        ssimulacra_score=$(echo "$line" | cut -d',' -f5)
+        compression_rate=$(echo "$line" | cut -d',' -f6)
+        reference_compression_rate=$(echo "$line" | cut -d',' -f7)
+        #New size >= target_size
+        if [ "$new_size" -ge "$target_size" ]; then
+          butteraugli_score=$(butteraugli "$x" "$filename"_pik_q"$i".png "$filename"_pik_q"$i"_hm.ppm)
+          convert "$filename"_pik_q"$i"_hm.ppm "$filename"_pik_q"$i"_hm.png
+          files_to_zip+=("${filename}_pik_q${i}_hm.png" "${filename}_pik_q${i}.png")
+          echo "Pik","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
+          break
+        fi
+      done < <(tac "pik-$filename.csv" | head -n -3)
+
+      #libjpeg
+      while read line
+      do
+        i=$(echo "$line" | cut -d',' -f1) #get quality
+        new_size=$(echo "$line" | cut -d',' -f2) #get size
+        new_size_bpp=$(echo "$line" | cut -d',' -f3)
+        butteraugli_score=$(echo "$line" | cut -d',' -f4)
+        ssimulacra_score=$(echo "$line" | cut -d',' -f5)
+        compression_rate=$(echo "$line" | cut -d',' -f6)
+        reference_compression_rate=$(echo "$line" | cut -d',' -f7)
+        #New size >= target_size
+        if [ "$new_size" -ge "$target_size" ]; then
+          butteraugli_score=$(butteraugli "$x" "$filename"_libjpeg_q"$i".jpg "$filename"_libjpeg_q"$i"_hm.ppm)
+          convert "$filename"_libjpeg_q"$i"_hm.ppm "$filename"_libjpeg_q"$i"_hm.png
+          files_to_zip+=("${filename}_libjpeg_q${i}_hm.png" "${filename}_libjpeg_q${i}.jpg") 
+          echo "LibJPEG","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
+          break
+        fi
+      done < <(tac "libjpeg-$filename.csv" | head -n -3) 
+
+      #libjpeg2000
+      while read line
+      do
+        i=$(echo "$line" | cut -d',' -f1) #get quality
+        new_size=$(echo "$line" | cut -d',' -f2) #get size
+        new_size_bpp=$(echo "$line" | cut -d',' -f3)
+        butteraugli_score=$(echo "$line" | cut -d',' -f4)
+        ssimulacra_score=$(echo "$line" | cut -d',' -f5)
+        compression_rate=$(echo "$line" | cut -d',' -f6)
+        reference_compression_rate=$(echo "$line" | cut -d',' -f7)
+        #New size >= target_size
+        if [ "$new_size" -ge "$target_size" ]; then
+          butteraugli_score=$(butteraugli "$x" "$filename"_openjpeg_q"$i".png "$filename"_openjpeg_q"$i"_hm.ppm)
+          convert "$filename"_openjpeg_q"$i"_hm.ppm "$filename"_openjpeg_q"$i"_hm.png
+          files_to_zip+=("${filename}_openjpeg_q${i}_hm.png" "${filename}_openjpeg_q${i}.png")
+          echo "OpenJPEG","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
+          break
+        fi
+      done < <(tac "libjpeg2000-$filename.csv" | head -n -3) 
+
+      #guetzli
+      while read line
+      do
+        i=$(echo "$line" | cut -d',' -f1) #get quality
+        new_size=$(echo "$line" | cut -d',' -f2) #get size
+        new_size_bpp=$(echo "$line" | cut -d',' -f3)
+        butteraugli_score=$(echo "$line" | cut -d',' -f4)
+        ssimulacra_score=$(echo "$line" | cut -d',' -f5)
+        compression_rate=$(echo "$line" | cut -d',' -f6)
+        reference_compression_rate=$(echo "$line" | cut -d',' -f7)
+        #New size >= target_size
+        if [ "$new_size" -ge "$target_size" ]; then
+          butteraugli_score=$(butteraugli "$x" "$filename"_guetzli_q"$i".jpg "$filename"_guetzli_q"$i"_hm.ppm)
+          convert "$filename"_guetzli_q"$i"_hm.ppm "$filename"_guetzli_q"$i"_hm.png
+          files_to_zip+=("${filename}_guetzli_q${i}_hm.png" "${filename}_guetzli_q${i}.jpg")
+          echo "Guetzli","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
+          break
+        fi
+      done < <(tac "guetzli-$filename.csv" | head -n -3) 
+
+      #flif_lossy
+      while read line
+      do
+        i=$(echo "$line" | cut -d',' -f1) #get quality
+        new_size=$(echo "$line" | cut -d',' -f2) #get size
+        new_size_bpp=$(echo "$line" | cut -d',' -f3)
+        butteraugli_score=$(echo "$line" | cut -d',' -f4)
+        ssimulacra_score=$(echo "$line" | cut -d',' -f5)
+        compression_rate=$(echo "$line" | cut -d',' -f6)
+        reference_compression_rate=$(echo "$line" | cut -d',' -f7)
+        #New size >= target_size
+        if [ "$new_size" -ge "$target_size" ]; then
+          butteraugli_score=$(butteraugli "$x" "$filename"_flif_lossy_q"$i".png "$filename"_flif_lossy_q"$i"_hm.ppm)
+          convert "$filename"_flif_lossy_q"$i"_hm.ppm "$filename"_flif_lossy_q"$i"_hm.png
+          files_to_zip+=("${filename}_flif_lossy_q${i}_hm.png"  "${filename}_flif_lossy_q${i}.png")
+          echo "Flif Lossy","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
+          break
+        fi
+      done < <(tac "flif_lossy-$filename.csv" | head -n -3) 
+
+      #bpg
+      while read line
+      do
+        i=$(echo "$line" | cut -d',' -f1) #get quality
+        new_size=$(echo "$line" | cut -d',' -f2) #get size
+        new_size_bpp=$(echo "$line" | cut -d',' -f3)
+        butteraugli_score=$(echo "$line" | cut -d',' -f4)
+        ssimulacra_score=$(echo "$line" | cut -d',' -f5)
+        compression_rate=$(echo "$line" | cut -d',' -f6)
+        reference_compression_rate=$(echo "$line" | cut -d',' -f7)
+        #New size >= target_size
+        if [ "$new_size" -ge "$target_size" ]; then
+          butteraugli_score=$(butteraugli "$x" "$filename"_bpg_q"$i".png "$filename"_bpg_q"$i"_hm.ppm)
+          convert "$filename"_bpg_q"$i"_hm.ppm "$filename"_bpg_q"$i"_hm.png
+          files_to_zip+=("${filename}_bpg_q${i}_hm.png" "${filename}_bpg_q${i}.png")
+          echo "BPG(x265) Lossy","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
+          break
+        fi
+      done < <(tac "bpg-$filename.csv" | head -n -3) 
+
+      #bpg jctvc
+      while read line
+      do
+        i=$(echo "$line" | cut -d',' -f1) #get quality
+        new_size=$(echo "$line" | cut -d',' -f2) #get size
+        new_size_bpp=$(echo "$line" | cut -d',' -f3)
+        butteraugli_score=$(echo "$line" | cut -d',' -f4)
+        ssimulacra_score=$(echo "$line" | cut -d',' -f5)
+        compression_rate=$(echo "$line" | cut -d',' -f6)
+        reference_compression_rate=$(echo "$line" | cut -d',' -f7)
+        #New size >= target_size
+        if [ "$new_size" -ge "$target_size" ]; then
+          butteraugli_score=$(butteraugli "$x" "$filename"_bpg_jctvc_q"$i".png "$filename"_bpg_jctvc_q"$i"_hm.ppm)
+          convert "$filename"_bpg_jctvc_q"$i"_hm.ppm "$filename"_bpg_jctvc_q"$i"_hm.png
+          files_to_zip+=("${filename}_bpg_jctvc_q${i}_hm.png" "${filename}_bpg_jctvc_q${i}.png")
+          echo "BPG(jctvc) Lossy","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
+          break
+        fi
+      done < <(tac "bpg_jctvc-$filename.csv" | head -n -3)
+
+      #mozjpeg
+      while read line
+      do
+        i=$(echo "$line" | cut -d',' -f1) #get quality
+        new_size=$(echo "$line" | cut -d',' -f2) #get size
+        new_size_bpp=$(echo "$line" | cut -d',' -f3)
+        butteraugli_score=$(echo "$line" | cut -d',' -f4)
+        ssimulacra_score=$(echo "$line" | cut -d',' -f5)
+        compression_rate=$(echo "$line" | cut -d',' -f6)
+        reference_compression_rate=$(echo "$line" | cut -d',' -f7)
+        #New size >= target_size
+        if [ "$new_size" -ge "$target_size" ]; then
+		  butteraugli_score=$(butteraugli "$x" "$filename"_mozjpeg_q"$i".jpg "$filename"_mozjpeg_q"$i"_hm.ppm)
+          convert "$filename"_mozjpeg_q"$i"_hm.ppm  "$filename"_mozjpeg_q"$i"_hm.png
+          files_to_zip+=("${filename}_mozjpeg_q${i}_hm.png" "${filename}_mozjpeg_q${i}.jpg")
+          echo "MozJPEG","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
+          break
+        fi
+      done < <(tac "mozjpeg-$filename.csv" | head -n -3)
+
+      #av1
+      while read line
+      do
+		q=$(echo "$line" | cut -d',' -f1) 
+		i=$(echo "$line" | cut -d',' -f2)
+		new_size=$(echo "$line" | cut -d',' -f3) #get size
+		new_size_bpp=$(echo "$line" | cut -d',' -f4)
+		butteraugli_score=$(echo "$line" | cut -d',' -f5)
+		ssimulacra_score=$(echo "$line" | cut -d',' -f6)
+		compression_rate=$(echo "$line" | cut -d',' -f7)
+		reference_compression_rate=$(echo "$line" | cut -d',' -f8)
+      #New size >= target_size
+      if [ "$new_size" -ge "$target_size" ]; then
+		butteraugli_score=$(butteraugli "$x" "$x"_"$i"_"$q".png "$x"_"$i"_"$q"_hm.ppm)
+		convert "$x"_"$i"_"$q"_hm.ppm "$x"_"$i"_"$q"_hm.png
+		files_to_zip+=("${x}_${i}_${q}_hm.png" "${x}_${i}_${q}.png")
+		echo "AV1","$q-$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
+		break
+      fi
+      done < <(tac "av1-$filename.csv" | head -n -3 | sort  -k3 -n -t,)
+
+
+      #webp lossy
+      while read line
+      do
+        i=$(echo "$line" | cut -d',' -f1) #get quality
+        new_size=$(echo "$line" | cut -d',' -f2) #get size
+        new_size_bpp=$(echo "$line" | cut -d',' -f3)
+        butteraugli_score=$(echo "$line" | cut -d',' -f4)
+        ssimulacra_score=$(echo "$line" | cut -d',' -f5)
+        compression_rate=$(echo "$line" | cut -d',' -f6)
+        reference_compression_rate=$(echo "$line" | cut -d',' -f7)
+        #New size >= target_size
+        if [ "$new_size" -ge "$target_size" ]; then
+          butteraugli_score=$(butteraugli "$x" "$filename"_webp_lossy_q"$i".png "$filename"_webp_lossy_q"$i"_hm.ppm)
+          convert "$filename"_webp_lossy_q"$i"_hm.ppm "$filename"_webp_lossy_q"$i"_hm.png
+          files_to_zip+=("${filename}_webp_lossy_q${i}.png" "${filename}_webp_lossy_q${i}_hm.png")
+          echo "Webp(Lossy)","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
+          break
+        fi
+      done < <(tac "webp_lossy-$filename.csv" | head -n -3)
+
+
+      #webp
+      while read line
+      do
+        i=$(echo "$line" | cut -d',' -f1) #get quality
+        new_size=$(echo "$line" | cut -d',' -f2) #get size
+        new_size_bpp=$(echo "$line" | cut -d',' -f3)
+        butteraugli_score=$(echo "$line" | cut -d',' -f4)
+        ssimulacra_score=$(echo "$line" | cut -d',' -f5)
+        compression_rate=$(echo "$line" | cut -d',' -f6)
+        reference_compression_rate=$(echo "$line" | cut -d',' -f7)
+        #New size >= target_size
+        if [ "$new_size" -ge "$target_size" ]; then
+          butteraugli_score=$(butteraugli "$x" "$filename"_webp_q"$i".png "$filename"_webp_q"$i"_hm.ppm)
+          convert "$filename"_webp_q"$i"_hm.ppm "$filename"_webp_q"$i"_hm.png
+          files_to_zip+=("${filename}_webp_q${i}.png" "${filename}_webp_q${i}_hm.png")
+          echo "Webp","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
+          break
+        fi
+      done < <(tac "webp-$filename.csv" | head -n -3)
+
+      sort  -k3 -n -t, comparision-"$filename".csv -o comparision-"$filename".csv # sort the csv by filesize
+      files_to_zip+=("comparision-$filename.csv")
+
+    fi
+
   done
 
   if [ "$combine_plots" = true ]; then
+    rm -rf pik-merge.csv libjpeg-merge.csv libjpeg2000-merge.csv guetzli-merge.csv flif_lossy-merge.csv bpg-merge.csv bpg_jctvc-merge.csv mozjpeg-merge.csv mozjpeg-merge.csv av1-merge.csv webp-merge.csv webp_lossy-merge.csv butteraugli_plot_merge.png ssimulacra_merge ssimulacra_plot_merge.png
+	#Create the ,erge csv
+	tail -q -n +4  "${list_pik[@]}" | datamash -st, -g1 mean 3  mean 4 mean 5 | awk -F , '{printf ("%s,%.2f,%.6f,%.8f\n",$1,$2,$3,$4)}'  &> pik-merge.csv
+    tail -q -n +4  "${list_libjpeg[@]}" | datamash -st, -g1 mean 3  mean 4 mean 5 | awk -F , '{printf ("%s,%.2f,%.6f,%.8f\n",$1,$2,$3,$4)}' |  sort -k1,1 -r -n -t, &> libjpeg-merge.csv
+    tail -q -n +4  "${list_libjpeg2000[@]}" | datamash -st, -g1 mean 3  mean 4 mean 5 | awk -F , '{printf ("%s,%.2f,%.6f,%.8f\n",$1,$2,$3,$4)}' | sort -k1,1 -r -n -t, &> libjpeg2000-merge.csv
+    tail -q -n +4  "${list_guetzli[@]}" | datamash -st, -g1 mean 3  mean 4 mean 5 | awk -F , '{printf ("%s,%.2f,%.6f,%.8f\n",$1,$2,$3,$4)}' | sort -k1,1 -r -n -t, &> guetzli-merge.csv
+    tail -q -n +4  "${list_flif_lossy[@]}" | datamash -st, -g1 mean 3  mean 4 mean 5 | awk -F , '{printf ("%s,%.2f,%.6f,%.8f\n",$1,$2,$3,$4)}' | sort -k1,1 -r -n -t, &> flif_lossy-merge.csv
+    tail -q -n +4  "${list_bpg[@]}"  | datamash -st, -g1 mean 3  mean 4 mean 5 | awk -F , '{printf ("%s,%.2f,%.6f,%.8f\n",$1,$2,$3,$4)}' | sort -k1,1 -r -n -t, &> bpg-merge.csv
+    tail -q -n +4  "${list_bpg_jctvc[@]}" | datamash -st, -g1 mean 3  mean 4 mean 5 | awk -F , '{printf ("%s,%.2f,%.6f,%.8f\n",$1,$2,$3,$4)}' | sort -k1,1 -r -n -t, &> bpg_jctvc-merge.csv
+    tail -q -n +4  "${list_mozjpeg[@]}" | datamash -st, -g1 mean 3  mean 4 mean 5 | awk -F , '{printf ("%s,%.2f,%.6f,%.8f\n",$1,$2,$3,$4)}' | sort -k1,1 -r -n -t, &> mozjpeg-merge.csv
+    tail -q -n +4  "${list_av1[@]}" | datamash -st, -g1,2 mean 4  mean 5 mean 6 | awk -F , '{printf ("%s,%s,%.2f,%.6f,%.8f\n",$1,$2,$3,$4,$5)}' | sort -k1,1 -k2,2 -n  -t,  &> av1-merge.csv 
+    tail -q -n +4  "${list_webp[@]}" | datamash -st, -g1 mean 3  mean 4 mean 5 | awk -F , '{printf ("%s,%.2f,%.6f,%.8f\n",$1,$2,$3,$4)}' | sort -k1,1 -r -n -t, &> webp-merge.csv
+    tail -q -n +4  "${list_webp_lossy[@]}"  | datamash -st, -g1 mean 3  mean 4 mean 5 | awk -F , '{printf ("%s,%.2f,%.6f,%.8f\n",$1,$2,$3,$4)}' | sort -k1,1 -r -n -t, &> webp_lossy-merge.csv
+	
+	
     plotcsv_graph_merge butteraugli_plot_merge.png "Merge Butteraugli Plot( ${image_count} images )"
     plotcsv_graph_ssimulacra_merge ssimulacra_plot_merge.png  "Merge Ssimulacra Plot( ${image_count} images )"
-    files_to_zip+="butteraugli_plot_merge.png ssimulacra_plot_merge.png "
+    files_to_zip+=("butteraugli_plot_merge.png" "ssimulacra_plot_merge.png" "pik-merge.csv" "libjpeg-merge.csv" "libjpeg2000-merge.csv" "guetzli-merge.csv" "flif_lossy-merge.csv" "bpg-merge.csv" "bpg_jctvc-merge.csv" "mozjpeg-merge.csv" "mozjpeg-merge.csv" "av1-merge.csv" "webp-merge.csv" "webp_lossy-merge.csv")
   fi
+
 
 
   #Create a zip to store the results
   zipfile_name=result_corpus_with_plots$(date "+%Y.%m.%d-%H.%M.%S").zip
-  zip "$zipfile_name" $files_to_zip
+  zip "$zipfile_name" "${files_to_zip[@]}"
   current_dir=$(pwd)/"$zipfile_name"
   echo "Success! Download results : $current_dir"
 }
