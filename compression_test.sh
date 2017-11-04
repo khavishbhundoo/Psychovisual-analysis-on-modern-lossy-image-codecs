@@ -18,12 +18,12 @@ function usage()
 {
   echo "Usage: $(basename "${BASH_SOURCE}") [options] image1.png image2.png ..."
   echo "Main Options"
-  echo "--only-pik              	Redo the test[image generation + csv ] only for pik and regenerate plots"
-  echo "--only-libjpeg          	Redo the test[image generation + csv ] only for libjpeg and regenerate plots"
-  echo "--only-libjpeg-2000     	Redo the test[image generation + csv ] only for libjpeg 2000 and regenerate plots"
-  echo "--only-guetzli          	Redo the test[image generation + csv ] only for guezli and regenerate plots"
-  echo "--only-flif-lossy       	Redo the test[image generation + csv ] only for flif(lossy) and regenerate plots"
-  echo "--only-webp             	Redo the test[image generation + csv ] only for webp(near-lossless) and regenerate plots"
+  echo "--only-pik              	Redo the test[image generation + csv ] only for pik & regenerate plots"
+  echo "--only-libjpeg          	Redo the test[image generation + csv ] only for libjpeg & regenerate plots"
+  echo "--only-libjpeg-2000     	Redo the test[image generation + csv ] only for libjpeg 2000 & regenerate plots"
+  echo "--only-guetzli          	Redo the test[image generation + csv ] only for guezli & regenerate plots"
+  echo "--only-flif-lossy       	Redo the test[image generation + csv ] only for flif(lossy) & regenerate plots"
+  echo "--only-webp             	Redo the test[image generation + csv ] only for webp(near-lossless) & regenerate plots"
   echo "--only-webp-lossy       	Redo the test[image generation + csv ] only for webp(lossy) and regenerate plots"
   echo "--only-bpg-lossy        	Redo the test[image generation + csv ] only for bgp(lossy) and regenerate plots"
   echo "--only-bpg-lossy-jctvc  	Redo the test[image generation + csv ] only for bgp(lossy) and regenerate plots"
@@ -33,6 +33,7 @@ function usage()
   echo "--only-csv              	Only regenerate csv files and plots"
   echo "--combine-plots         	Merge results of multiple images to create a single butteraugli and ssimulacra plot"
   echo "--heatmap_target_size=SIZE  Generate butteraugli heatmaps for a compressed image just above SIZE for each encoder"
+  echo "--path=/path/goes/here 		Use all png images in directory as source(no trailing / )"
   exit 1
 
 }
@@ -123,6 +124,7 @@ function check_dependancies()
     missing_deps=true
   fi
 
+  #TODO need to ensure we have 2017 version of gnu parallel as we use parset
   if ! exists parallel; then
     echo 'gnu parallel is not installed...exiting'
     missing_deps=true
@@ -311,13 +313,14 @@ EOFMarker
 }
 
 
+#TODO : Add paralleism for computing psycovisual scores
 function libjpeg_test
 {
   echo "Analysing JPEGs optimized by LibJPEG[Source :$x]"
   rm -rf libjpeg-"$filename".csv
   #Start csv generation
-  echo "Test_Image,Original_Size" >> libjpeg-"$filename".csv
-  echo "$filename","$orig_size" >> libjpeg-"$filename".csv
+  echo "Test_Image,Original_Size(bytes),Original_Size(bpp)" >> libjpeg-"$filename".csv
+  echo "$filename","$orig_size","$orig_size_bpp" >> libjpeg-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> libjpeg-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating JPEGs optimized by LibJPEG[Source :$x] in parallel"
@@ -344,31 +347,55 @@ function libjpeg_test
 #End csv generation
 }
 
-#TODO : Add paralleism
-#TODO : make naming of files match that of csv
 function av1_test
 {
   echo "Analysing images optimized by AV1"
   rm -rf av1-"$filename".csv "$x".y4m
   ffmpeg -nostats -loglevel 0 -y -i  "$x" -pix_fmt yuv444p10le -strict -2 "$x".y4m
-  width=$(identify -format "%w" "$x")
-  height=$(identify -format "%h" "$x")
   #Start csv generation
-  echo "Test_Image,Original_Size" >> av1-"$filename".csv
-  echo "$filename","$orig_size" >> av1-"$filename".csv
+  echo "Test_Image,Original_Size(bytes),Original_Size(bpp)" >> av1-"$filename".csv
+  echo "$filename","$orig_size","$orig_size_bpp" >> av1-"$filename".csv
   echo "Quality(cq-level),Flatness(qm-min),Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> av1-"$filename".csv
+  #Do image generation in parallel
+  if [ "$only_csv" = false ]; then
+  cmd_arr=()
   for q in 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40; do
     for i in 4 6 8 10 12; do
-      if [ "$only_csv" = false ]; then
-        aomenc "$x".y4m --i444 --enable-qm=1 --qm-min="$i" --profile=3 -w "$width" -h "$height" -b 10 --end-usage=q --cq-level="$q" -o "$x"_"$i"_"$q".ivf
-        aomdec "$x"_"$i"_"$q".ivf --output-bit-depth=10 -o "$x"_"$i"_"$q".y4m
-        ffmpeg -nostats -loglevel 0 -y -i "$x"_"$i"_"$q".y4m "$x"_"$i"_"$q".png
-        convert "$x"_"$i"_"$q".png PNG24:"$x"_"$i"_"$q"_ssimulacra.png # ssimulacra can't handle generated png
-      fi
-      new_size=$(wc -c < "$x"_"$i"_"$q".ivf)
+		cmd_arr+=("aomenc $x.y4m --i444 --enable-qm=1 --qm-min=$i --profile=3 -w $width -h $height -b 10 --end-usage=q --cq-level=$q -o ${x}_${q}_${i}.ivf")
+	done
+  done
+  for q in 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40; do
+    for i in 4 6 8 10 12; do
+		cmd_arr+=("aomdec ${x}_${q}_${i}.ivf --output-bit-depth=10 -o ${x}_${q}_${i}.y4m")
+	done
+  done
+  for q in 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40; do
+    for i in 4 6 8 10 12; do
+		cmd_arr+=("ffmpeg -nostats -loglevel 0 -y -i ${x}_${q}_${i}.y4m ${x}_${q}_${i}.png")
+	done
+  done
+  for q in 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40; do
+    for i in 4 6 8 10 12; do
+		cmd_arr+=("convert ${x}_${q}_${i}.png PNG24:${x}_${q}_${i}_ssimulacra.png")
+	done
+  done
+  #keep order to ensure we are able to generate png successfully
+  parallel --will-cite -k  ::: "${cmd_arr[@]}"
+  unset cmd_arr
+  fi
+  
+  for q in 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40; do
+    for i in 4 6 8 10 12; do
+      #if [ "$only_csv" = false ]; then		
+        # aomenc "$x".y4m --i444 --enable-qm=1 --qm-min="$i" --profile=3 -w "$width" -h "$height" -b 10 --end-usage=q --cq-level="$q" -o "$x"_"$q"_"$i".ivf
+        # aomdec "$x"_"$q"_"$i".ivf --output-bit-depth=10 -o "$x"_"$q"_"$i".y4m
+        # ffmpeg -nostats -loglevel 0 -y -i "$x"_"$q"_"$i".y4m "$x"_"$q"_"$i".png
+        # convert "$x"_"$q"_"$i".png PNG24:"$x"_"$q"_"$i"_ssimulacra.png # ssimulacra can't handle generated png
+      #fi
+      new_size=$(wc -c < "$x"_"$q"_"$i".ivf)
       new_size_bpp=$(convert_to_bpp "$new_size")
-      butteraugli_score=$(butteraugli "$x" "$x"_"$i"_"$q".png)
-      ssimulacra_score=$(ssimulacra "$x" "$x"_"$i"_"$q"_ssimulacra.png)
+      butteraugli_score=$(butteraugli "$x" "$x"_"$q"_"$i".png)
+      ssimulacra_score=$(ssimulacra "$x" "$x"_"$q"_"$i"_ssimulacra.png)
       compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
       reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
       printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
@@ -384,8 +411,8 @@ function libjpeg_2000_test
   echo "Analysing JPEG 2000 images optimized by OpenJPEG(JPEG 2000)[Source :$x]"
   rm -rf libjpeg2000-"$filename".csv
   #Start csv generation
-  echo "Test_Image,Original_Size" >> libjpeg2000-"$filename".csv
-  echo "$filename","$orig_size" >> libjpeg2000-"$filename".csv
+  echo "Test_Image,Original_Size,Original_Size(bpp)" >> libjpeg2000-"$filename".csv
+  echo "$filename","$orig_size","$orig_size_bpp" >> libjpeg2000-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> libjpeg2000-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating JPEG 2000 images optimized by LibJPEG[Source :$x] in parallel"
@@ -415,8 +442,8 @@ function guetzli_test
   echo "Analysing JPEGs optimized by Guetzli[Source :$x]"
   rm -rf guetzli-"$filename".csv
 #Start csv generation
-  echo "Test_Image,Original_Size" >> guetzli-"$filename".csv
-  echo "$filename","$orig_size" >> guetzli-"$filename".csv
+  echo "Test_Image,Original_Size,Original_Size(bpp)" >> guetzli-"$filename".csv
+  echo "$filename","$orig_size","$orig_size_bpp" >> guetzli-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> guetzli-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating JPEGs optimized by Guetzli(This will take a while...BE patient)[Source :$x] in parallel"
@@ -442,10 +469,11 @@ function guetzli_test
 function mozjpeg_test
 {
   rm -rf mozjpeg-"$filename".csv
+  orig_size_bpp=$(convert_to_bpp "$orig_size")
   echo "Analysing JPEGs optimized by MozJPEG[Source :$x]"
   #Start csv generation
-  echo "Test_Image,Original_Size" >> mozjpeg-"$filename".csv
-  echo "$filename","$orig_size" >> mozjpeg-"$filename".csv
+  echo "Test_Image,Original_Size,Original_Size(bpp)" >> mozjpeg-"$filename".csv
+  echo "$filename","$orig_size","$orig_size_bpp" >> mozjpeg-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> mozjpeg-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating JPEGs optimized by MozJPEG[Source :$x] in parallel"
@@ -472,9 +500,10 @@ function pik_test
 {
   echo "Analysing Pik images(This will take a while...BE patient)[Source :$x]"
   rm -rf pik-"$filename".csv
+  orig_size_bpp=$(convert_to_bpp "$orig_size")
 #Start csv generation
-  echo "Test_Image,Original_Size" >> pik-"$filename".csv
-  echo "$filename","$orig_size" >> pik-"$filename".csv
+  echo "Test_Image,Original_Size,Original_Size(bpp)" >> pik-"$filename".csv
+  echo "$filename","$orig_size","$orig_size_bpp" >> pik-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> pik-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating Pik images(This will take a while...BE patient)[Source :$x] in parallel"
@@ -505,8 +534,8 @@ function webp_near_lossless
   echo "Analysing Webp images(Near Lossless)[Source :$x]"
   rm -rf webp-"$filename".csv
 #Start csv generation
-  echo "Test_Image,Original_Size" >> webp-"$filename".csv
-  echo "$filename","$orig_size" >> webp-"$filename".csv
+  echo "Test_Image,Original_Size,Original_Size(bpp)" >> webp-"$filename".csv
+  echo "$filename","$orig_size","$orig_size_bpp" >> webp-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> webp-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating Webp images(Near Lossless)[Source :$x] in parallel"
@@ -539,8 +568,8 @@ function webp_lossy
   echo "Analysing Webp images(Lossy)[Source :$x]"
   rm -rf webp_lossy-"$filename".csv
 #Start csv generation
-  echo "Test_Image,Original_Size" >> webp_lossy-"$filename".csv
-  echo "$filename","$orig_size" >> webp_lossy-"$filename".csv
+  echo "Test_Image,Original_Size,Original_Size(bpp)" >> webp_lossy-"$filename".csv
+  echo "$filename","$orig_size","$orig_size_bpp" >> webp_lossy-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> webp_lossy-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating Webp images(Lossy)[Source :$x] in parallel"
@@ -571,8 +600,8 @@ function bpg_lossy
   echo "Analysing BPG images(x265 encoder - lossy)[Source :$x]"
   rm -rf bpg-"$filename".csv
   #Start csv generation
-  echo "Test_Image,Original_Size" >> bpg-"$filename".csv
-  echo "$filename","$orig_size" >> bpg-"$filename".csv
+  echo "Test_Image,Original_Size,Original_Size(bpp)" >> bpg-"$filename".csv
+  echo "$filename","$orig_size","$orig_size_bpp" >> bpg-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> bpg-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating BPG images(x265 encoder - lossy)[Source :$x] in parallel"
@@ -603,8 +632,8 @@ function bpg_lossy_jctvc
   echo "Analysing BPG images(jctvc encoder - lossy)[Source :$x]"
   rm -rf bpg_jctvc-"$filename".csv
   #Start csv generation
-  echo "Test_Image,Original_Size" >> bpg_jctvc-"$filename".csv
-  echo "$filename","$orig_size" >> bpg_jctvc-"$filename".csv
+  echo "Test_Image,Original_Size,Original_Size(bpp)" >> bpg_jctvc-"$filename".csv
+  echo "$filename","$orig_size","$orig_size_bpp" >> bpg_jctvc-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> bpg_jctvc-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating BPG images(jctvc encoder - lossy)[Source :$x] in parallel"
@@ -635,18 +664,18 @@ function flif_lossy
   echo "Analysing FLIF images(Lossy)[Source :$x]"
   rm -rf flif_lossy-"$filename".csv
   #Start csv generation
-  echo "Test_Image,Original_Size" >> flif_lossy-"$filename".csv
-  echo "$filename","$orig_size" >> flif_lossy-"$filename".csv
+  echo "Test_Image,Original_Size,Original_Size(bpp)" >> flif_lossy-"$filename".csv
+  echo "$filename","$orig_size","$orig_size_bpp" >> flif_lossy-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> flif_lossy-"$filename".csv
   if [ "$only_csv" = false ]; then
     echo "Generating FLIF images(Lossy)[Source :$x] in parallel"
-    parallel --will-cite 'flif --overwrite -e -E100 -Q"{1}"  "{2}" "{3}"_lossy_q"{1}".flif' ::: {100..0}  ::: "$x" ::: "$filename"
+    parallel --will-cite 'flif -e -E100 -o -Q"{1}"  "{2}" "{3}"_lossy_q"{1}".flif' ::: {100..0}  ::: "$x" ::: "$filename"
     parallel --will-cite 'flif -d "{1}"_lossy_q"{2}".flif "{1}"_flif_lossy_q{2}.png' ::: "$filename" ::: {100..0}
   fi
   echo "Perform comparisions and store results in flif_lossy-$filename.csv"
   for ((i=100; i>=0; i--))
   do
-    #flif --overwrite -e -E100 -Q"$i"  "$x" "$filename"_lossy_q"$i".flif
+    #flif -e -E100 -o -Q"$i"  "$x" "$filename"_lossy_q"$i".flif
     #convert to png to allow comparision
     #flif -d "$filename"_lossy_q"$i".flif "$filename"_flif_lossy_q"$i".png
     new_size=$(wc -c < "$filename"_lossy_q"$i".flif)
@@ -794,7 +823,18 @@ function main
         target_size=${x//[!0-9]/}
         continue
       fi
-
+	  
+	  if [[ "$x" =~ ^--path=.* ]] ; then
+	    #TODO need to test
+		images=()
+        directory_path=${x#--path=}/*.png
+		for f in $directory_path; do
+			 images+=("$f")
+		done
+		set -- "$@" "${images[@]}"
+		unset images
+        continue
+      fi
     done
 
     if [ "$target_size" -gt 0 ]; then
@@ -838,6 +878,7 @@ function main
     reference_jpg_size=$(wc -c < "$filename"_libjpeg_reference.jpg)
     width=$(identify -format "%w" "$x")
     height=$(identify -format "%h" "$x")
+	orig_size_bpp=$(convert_to_bpp "$orig_size")
     reference_jpg_bpp=$(convert_to_bpp "$reference_jpg_size")
 
     if [ "$only_libjpeg" = true ] || [ "$only_csv" = true ] || [ "$has_options" = false ]; then
@@ -876,7 +917,7 @@ function main
       bpg_lossy
     fi
 
-    if [ "$only_bpg_lossy_jctvc" = true ] || [ "$only_csv" = true ]  || [ "$has_options" = false ]; then
+    if [ "$only_bpg_lossy_jctvc" = true ] || [ "$only_csv" = true ] || [ "$has_options" = false ]; then
       bpg_lossy_jctvc
     fi
 
@@ -905,12 +946,67 @@ function main
 
     #Generate heatmap + comparison csv if option is present
     if [ "$target_size" -gt 0 ]; then
+	 
+	  if [ ! -e "pik-$filename.csv" ]; then
+			echo "Pik CSV file doesn't exist! Regenerating csv"
+			pik_test
+	  fi
+	  
+	  if [ ! -e "libjpeg-$filename.csv" ]; then
+			echo "LibJPEG CSV file doesn't exist! Regenerating csv"
+			libjpeg_test
+	  fi
+	  
+	  if [ ! -e "libjpeg2000-$filename.csv" ]; then
+			echo "LibJPEG 2000 CSV file doesn't exist! Regenerating csv"
+			libjpeg_2000_test
+	  fi
+	  
+	  if [ ! -e "guetzli-$filename.csv" ]; then
+			echo "Guetzli CSV file doesn't exist! Regenerating csv"
+			guetzli_test
+	  fi
+	  
+	  if [ ! -e "flif_lossy-$filename.csv" ]; then
+			echo "Flif_lossy CSV file doesn't exist! Regenerating csv"
+			flif_lossy
+	  fi
+	  
+	  if [ ! -e "bpg-$filename.csv" ]; then
+			echo "BPG_lossy CSV file doesn't exist! Regenerating csv"
+			bpg_lossy
+	  fi
+	  
+	  if [ ! -e "bpg_jctvc-$filename.csv" ]; then
+			echo "BPG_lossy CSV file doesn't exist! Regenerating csv"
+			bpg_lossy_jctvc
+	  fi
+	  
+	  if [ ! -e "mozjpeg-$filename.csv" ]; then
+			echo "MozJPEG CSV file doesn't exist! Regenerating csv"
+			mozjpeg_test
+	  fi
+	  
+	  if [ ! -e "av1-$filename.csv" ]; then
+			echo "AV1 CSV file doesn't exist! Regenerating csv"
+			av1_test
+	  fi
+	  
+	  if [ ! -e "webp-$filename.csv" ]; then
+			echo "Webp CSV file doesn't exist! Regenerating csv"
+			webp_near_lossless
+	  fi
+	  
+	  if [ ! -e "webp_lossy-$filename.csv" ]; then
+			echo "Webp lossy CSV file file doesn't exist! Regenerating csv"
+			webp_lossy
+	  fi
 
       echo "Generating heatmaps + comparision csv"
       echo "Encoder,Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> comparision-"$filename".csv
 
       #pik
-      while read line
+      while read -r line
       do
         i=$(echo "$line" | cut -d',' -f1) #get quality
         new_size=$(echo "$line" | cut -d',' -f2) #get size
@@ -930,7 +1026,7 @@ function main
       done < <(tac "pik-$filename.csv" | head -n -3)
 
       #libjpeg
-      while read line
+      while read -r line
       do
         i=$(echo "$line" | cut -d',' -f1) #get quality
         new_size=$(echo "$line" | cut -d',' -f2) #get size
@@ -950,7 +1046,7 @@ function main
       done < <(tac "libjpeg-$filename.csv" | head -n -3) 
 
       #libjpeg2000
-      while read line
+      while read -r line
       do
         i=$(echo "$line" | cut -d',' -f1) #get quality
         new_size=$(echo "$line" | cut -d',' -f2) #get size
@@ -970,7 +1066,7 @@ function main
       done < <(tac "libjpeg2000-$filename.csv" | head -n -3) 
 
       #guetzli
-      while read line
+      while read -r line
       do
         i=$(echo "$line" | cut -d',' -f1) #get quality
         new_size=$(echo "$line" | cut -d',' -f2) #get size
@@ -990,7 +1086,7 @@ function main
       done < <(tac "guetzli-$filename.csv" | head -n -3) 
 
       #flif_lossy
-      while read line
+      while read -r line
       do
         i=$(echo "$line" | cut -d',' -f1) #get quality
         new_size=$(echo "$line" | cut -d',' -f2) #get size
@@ -1010,7 +1106,7 @@ function main
       done < <(tac "flif_lossy-$filename.csv" | head -n -3) 
 
       #bpg
-      while read line
+      while read -r line
       do
         i=$(echo "$line" | cut -d',' -f1) #get quality
         new_size=$(echo "$line" | cut -d',' -f2) #get size
@@ -1030,7 +1126,7 @@ function main
       done < <(tac "bpg-$filename.csv" | head -n -3) 
 
       #bpg jctvc
-      while read line
+      while read -r line
       do
         i=$(echo "$line" | cut -d',' -f1) #get quality
         new_size=$(echo "$line" | cut -d',' -f2) #get size
@@ -1050,7 +1146,7 @@ function main
       done < <(tac "bpg_jctvc-$filename.csv" | head -n -3)
 
       #mozjpeg
-      while read line
+      while read -r line
       do
         i=$(echo "$line" | cut -d',' -f1) #get quality
         new_size=$(echo "$line" | cut -d',' -f2) #get size
@@ -1070,7 +1166,7 @@ function main
       done < <(tac "mozjpeg-$filename.csv" | head -n -3)
 
       #av1
-      while read line
+      while read -r line
       do
 		q=$(echo "$line" | cut -d',' -f1) 
 		i=$(echo "$line" | cut -d',' -f2)
@@ -1092,7 +1188,7 @@ function main
 
 
       #webp lossy
-      while read line
+      while read -r line
       do
         i=$(echo "$line" | cut -d',' -f1) #get quality
         new_size=$(echo "$line" | cut -d',' -f2) #get size
@@ -1113,7 +1209,7 @@ function main
 
 
       #webp
-      while read line
+      while read -r line
       do
         i=$(echo "$line" | cut -d',' -f1) #get quality
         new_size=$(echo "$line" | cut -d',' -f2) #get size
@@ -1141,7 +1237,7 @@ function main
 
   if [ "$combine_plots" = true ]; then
     rm -rf pik-merge.csv libjpeg-merge.csv libjpeg2000-merge.csv guetzli-merge.csv flif_lossy-merge.csv bpg-merge.csv bpg_jctvc-merge.csv mozjpeg-merge.csv mozjpeg-merge.csv av1-merge.csv webp-merge.csv webp_lossy-merge.csv butteraugli_plot_merge.png ssimulacra_merge ssimulacra_plot_merge.png
-	#Create the ,erge csv
+	#Create the merge csv
 	tail -q -n +4  "${list_pik[@]}" | datamash -st, -g1 mean 3  mean 4 mean 5 | awk -F , '{printf ("%s,%.2f,%.6f,%.8f\n",$1,$2,$3,$4)}'  &> pik-merge.csv
     tail -q -n +4  "${list_libjpeg[@]}" | datamash -st, -g1 mean 3  mean 4 mean 5 | awk -F , '{printf ("%s,%.2f,%.6f,%.8f\n",$1,$2,$3,$4)}' |  sort -k1,1 -r -n -t, &> libjpeg-merge.csv
     tail -q -n +4  "${list_libjpeg2000[@]}" | datamash -st, -g1 mean 3  mean 4 mean 5 | awk -F , '{printf ("%s,%.2f,%.6f,%.8f\n",$1,$2,$3,$4)}' | sort -k1,1 -r -n -t, &> libjpeg2000-merge.csv
