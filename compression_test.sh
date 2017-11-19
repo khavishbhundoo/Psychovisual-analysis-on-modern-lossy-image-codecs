@@ -6,8 +6,8 @@
 # License : MIT                                     #
 # Performs compression tests using multiple encoders#
 #####################################################
-
-
+ulimit -s unlimited
+#TODO : Add --no-parallel option
 #Check if a command line tool is installed on the server
 function exists()
 {
@@ -26,14 +26,15 @@ function usage()
   echo "--only-webp             	Redo the test[image generation + csv ] only for webp(near-lossless) & regenerate plots"
   echo "--only-webp-lossy       	Redo the test[image generation + csv ] only for webp(lossy) and regenerate plots"
   echo "--only-bpg-lossy        	Redo the test[image generation + csv ] only for bgp(lossy) and regenerate plots"
-  echo "--only-bpg-lossy-jctvc  	Redo the test[image generation + csv ] only for bgp(lossy) and regenerate plots"
+  echo "--only-bpg-lossy-jctvc  	Redo the test[image generation + csv ] only for bgp(lossy) with jctvc and regenerate plots"
   echo "--only-mozjpeg          	Redo the test[image generation + csv ] only for mozjpeg and regenerate plots"
   echo "--only-av1              	Redo the test[image generation + csv ] only for av1 and regenerate plots"
   echo "--only-plots            	Only regenerate plots"
   echo "--only-csv              	Only regenerate csv files and plots"
   echo "--combine-plots         	Merge results of multiple images to create a single butteraugli and ssimulacra plot"
   echo "--heatmap_target_size=SIZE  Generate butteraugli heatmaps for a compressed image just above SIZE for each encoder"
-  echo "--path=/path/goes/here 		Use all png images in directory as source(no trailing / )"
+  echo "--only-image-generation     Only generate compressed images + the csv files for various codecs and exit"
+  #echo "--path=/path/goes/here 		Use all png images in directory as source(no trailing / )" #need to fix
   exit 1
 
 }
@@ -311,29 +312,207 @@ function plotcsv_graph_ssimulacra_merge
 	"webp_lossy-merge.csv" using 2:4 w l ls 12 title 'webp-lossy'
 EOFMarker
 }
+#######################################Handler functions START ###########################################################
 
 
-#TODO : Add paralleism for computing psycovisual scores
-function libjpeg_test
+
+function av1_generation_handler
 {
-  echo "Analysing JPEGs optimized by LibJPEG[Source :$x]"
-  rm -rf libjpeg-"$filename".csv
-  #Start csv generation
-  echo "Test_Image,Original_Size(bytes),Original_Size(bpp)" >> libjpeg-"$filename".csv
-  echo "$filename","$orig_size","$orig_size_bpp" >> libjpeg-"$filename".csv
-  echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> libjpeg-"$filename".csv
+  q="$1"
+  i="$2"
   if [ "$only_csv" = false ]; then
-    echo "Generating JPEGs optimized by LibJPEG[Source :$x] in parallel"
-    #ImageMagick uses an old version of libjpeg so i take the latest one from github for accuracy
-    #parallel --will-cite 'convert "{1}" -quality "{2}" -sampling-factor 1x1 "{3}"_libjpeg_q"{2}".jpg' ::: "$x" ::: {100..70} ::: "$filename"
-    parallel --will-cite 'jpeg -q "{1}" -oz  -qt 3 -qv -h "{2}".ppm "{3}"_libjpeg_q"{1}".jpg' ::: {100..70} ::: "$x" ::: "$filename"
+		aomenc "$x".y4m --i444 --enable-qm=1 --qm-min="$i" --profile=3 -w "$width" -h "$height" -b 10 --end-usage=q --cq-level="$q" -o "$x"_"$q"_"$i".ivf
+        aomdec "$x"_"$q"_"$i".ivf --output-bit-depth=10 -o "$x"_"$q"_"$i".y4m
+        ffmpeg -nostats -loglevel 0 -y -i "$x"_"$q"_"$i".y4m "$x"_"$q"_"$i".png
+        convert "$x"_"$q"_"$i".png PNG24:"$x"_"$q"_"$i"_ssimulacra.png # ssimulacra can't handle generated png
   fi
-  echo "Perform comparisions and store results in libjpeg-$filename.csv"
-  for ((i=100; i>=70; i--))
-  do
-    #ImageMagick uses an old version of libjpeg so i take the latest one from github for accuracy
-    #convert "$x" -quality "$i" -sampling-factor 1x1 "$filename"_libjpeg_q"$i".jpg
-    #jpeg -q "$i" -oz -v -qt 3 -h  "$x".ppm "$filename"_libjpeg_q"$i".jpg
+  new_size=$(wc -c < "$x"_"$q"_"$i".ivf)
+  new_size_bpp=$(convert_to_bpp "$new_size")
+  butteraugli_score=$(butteraugli "$x" "$x"_"$q"_"$i".png)
+  ssimulacra_score=$(ssimulacra "$x" "$x"_"$q"_"$i"_ssimulacra.png)
+  compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
+  reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
+  printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
+  printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
+  echo "$q","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> av1-"$filename".csv
+}
+
+
+function libjpeg_2000_generation_handler
+{
+  i="$1"
+  if [ "$only_csv" = false ]; then
+    opj_compress -i "$x".ppm -r "$i" -o "$filename"_openjpeg_q"$i".jp2 -I -r "$i"
+    opj_decompress -i "$filename"_openjpeg_q"$i".jp2  -o "$filename"_openjpeg_q"$i".png
+  fi
+    new_size=$(wc -c < "$filename"_openjpeg_q"$i".jp2)
+    new_size_bpp=$(convert_to_bpp "$new_size")
+    butteraugli_score=$(butteraugli "$x" "$filename"_openjpeg_q"$i".png)
+    ssimulacra_score=$(ssimulacra "$x" "$filename"_openjpeg_q"$i".png)
+    compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
+    reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
+    printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
+    printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
+    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> libjpeg2000-"$filename".csv
+}
+
+
+function guetzli_generation_handler
+{
+  i="$1"
+  if [ "$only_csv" = false ]; then
+    guetzli  --nomemlimit --quality "$i"  "$x"  "$filename"_guetzli_q"$i".jpg
+  fi
+    new_size=$(wc -c < "$filename"_guetzli_q"$i".jpg)
+    new_size_bpp=$(convert_to_bpp "$new_size")
+    butteraugli_score=$(butteraugli "$x" "$filename"_guetzli_q"$i".jpg)
+    ssimulacra_score=$(ssimulacra "$x" "$filename"_guetzli_q"$i".jpg)
+    compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
+    reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
+    printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
+    printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
+    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> guetzli-"$filename".csv
+}
+
+
+function mozjpeg_generation_handler
+{
+  i="$1"
+  if [ "$only_csv" = false ]; then
+    cjpeg -optimize -sample 1x1 -quality "$i" -outfile "$filename"_mozjpeg_q"$i".jpg "$x"
+  fi
+    new_size=$(wc -c < "$filename"_mozjpeg_q"$i".jpg)
+    new_size_bpp=$(convert_to_bpp "$new_size")
+    butteraugli_score=$(butteraugli "$x" "$filename"_mozjpeg_q"$i".jpg)
+    ssimulacra_score=$(ssimulacra "$x" "$filename"_mozjpeg_q"$i".jpg)
+    compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
+    reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
+    printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
+    printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
+    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> mozjpeg-"$filename".csv
+}
+
+function pik_generation_handler
+{
+  i="$1"
+  if [ "$only_csv" = false ]; then
+    cpik  "$x" "$filename"_q"$i".pik --distance "$i"
+	dpik "$filename"_q"$i".pik "$filename"_pik_q"$i".png
+  fi
+    new_size=$(wc -c < "$filename"_q"$i".pik)
+    new_size_bpp=$(convert_to_bpp "$new_size")
+    butteraugli_score=$(butteraugli "$x" "$filename"_pik_q"$i".png)
+    ssimulacra_score=$(ssimulacra "$x" "$filename"_pik_q"$i".png)
+    compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
+    reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
+    printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
+    printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
+    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> pik-"$filename".csv
+}
+
+function webp_near_lossless_handler
+{
+  i="$1"
+  if [ "$only_csv" = false ]; then
+    cwebp -sharp_yuv -mt -quiet -near_lossless "$i" -q 100 -m 6 "$x"  -o "$filename"_webp_q"$i".webp
+    dwebp -quiet "$filename"_webp_q"$i".webp -o "$filename"_webp_q"$i".png
+  fi
+    new_size=$(wc -c < "$filename"_webp_q"$i".webp)
+    new_size_bpp=$(convert_to_bpp "$new_size")
+    butteraugli_score=$(butteraugli "$x" "$filename"_webp_q"$i".png)
+    ssimulacra_score=$(ssimulacra "$x" "$filename"_webp_q"$i".png)
+    compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
+    reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
+    printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
+    printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
+    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> webp-"$filename".csv
+}
+
+
+function webp_lossy_handler
+{
+  i="$1"
+  if [ "$only_csv" = false ]; then
+    cwebp -sharp_yuv -pass 10 -mt -quiet -q "$i" -m 6 "$x"  -o "$filename"_webp_lossy_q"$i".webp
+    dwebp -quiet "$filename"_webp_lossy_q"$i".webp -o "$filename"_webp_lossy_q"$i".png
+  fi
+    new_size=$(wc -c < "$filename"_webp_lossy_q"$i".webp)
+    new_size_bpp=$(convert_to_bpp "$new_size")
+    butteraugli_score=$(butteraugli "$x" "$filename"_webp_lossy_q"$i".png)
+    ssimulacra_score=$(ssimulacra "$x" "$filename"_webp_lossy_q"$i".png)
+    compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
+    reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
+    printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
+    printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
+    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> webp_lossy-"$filename".csv
+}
+
+
+function bpg_lossy_handler
+{
+  i="$1"
+  if [ "$only_csv" = false ]; then
+    bpgenc -q "$i" -f 444  -m 9 "$x" -o "$filename"_bpg_q"$i".bpg
+    #convert to png to allow comparision
+    bpgdec "$filename"_bpg_q"$i".bpg -o "$filename"_bpg_q"$i".png
+  fi
+    new_size=$(wc -c < "$filename"_bpg_q"$i".bpg)
+    new_size_bpp=$(convert_to_bpp "$new_size")
+    butteraugli_score=$(butteraugli "$x" "$filename"_bpg_q"$i".png)
+    ssimulacra_score=$(ssimulacra "$x" "$filename"_bpg_q"$i".png)
+    compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
+    reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
+    printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
+    printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
+    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> bpg-"$filename".csv
+}
+
+
+
+function bpg_lossy_jctvc_handler
+{
+  i="$1"
+  if [ "$only_csv" = false ]; then
+    bpgenc -q "$i" -f 444  -m 9 -e jctvc "$x" -o "$filename"_bpg_jctvc_q"$i".bpg
+    #convert to png to allow comparision
+    bpgdec "$filename"_bpg_jctvc_q"$i".bpg -o "$filename"_bpg_jctvc_q"$i".png
+  fi
+    new_size=$(wc -c < "$filename"_bpg_jctvc_q"$i".bpg)
+    new_size_bpp=$(convert_to_bpp "$new_size")
+    butteraugli_score=$(butteraugli "$x" "$filename"_bpg_jctvc_q"$i".png)
+    ssimulacra_score=$(ssimulacra "$x" "$filename"_bpg_jctvc_q"$i".png)
+    compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
+    reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
+    printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
+    printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
+    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> bpg_jctvc-"$filename".csv
+}
+
+function flif_lossy_handler
+{
+  i="$1"
+  if [ "$only_csv" = false ]; then
+    flif -o -e -E100  -Q"$i"  "$x" "$filename"_lossy_q"$i".flif
+    #convert to png to allow comparision
+    flif  -o -d "$filename"_lossy_q"$i".flif "$filename"_flif_lossy_q"$i".png
+  fi
+    new_size=$(wc -c < "$filename"_lossy_q"$i".flif)
+    new_size_bpp=$(convert_to_bpp "$new_size")
+    butteraugli_score=$(butteraugli "$x" "$filename"_flif_lossy_q"$i".png)
+    ssimulacra_score=$(ssimulacra "$x" "$filename"_flif_lossy_q"$i".png)
+    compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
+    reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
+    printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
+    printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
+    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> flif_lossy-"$filename".csv
+}
+
+function libjpeg_generation_handler
+{
+    i="$1"
+	if [ "$only_csv" = false ]; then
+    jpeg -q "$i" -oz -h -qt 3 -qv  "$x".ppm "$filename"_libjpeg_q"$i".jpg
+	fi
     new_size=$(wc -c < "$filename"_libjpeg_q"$i".jpg)
     new_size_bpp=$(convert_to_bpp "$new_size")
     butteraugli_score=$(butteraugli "$x" "$filename"_libjpeg_q"$i".jpg)
@@ -343,9 +522,29 @@ function libjpeg_test
     printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
     printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
     echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> libjpeg-"$filename".csv
-  done
+}
+
+
+#Export handler functions
+export -f libjpeg_generation_handler av1_generation_handler libjpeg_2000_generation_handler guetzli_generation_handler mozjpeg_generation_handler pik_generation_handler webp_near_lossless_handler webp_lossy_handler bpg_lossy_handler bpg_lossy_jctvc_handler flif_lossy_handler
+
+
+#################################Handler functions END ################################################################
+
+function libjpeg_test
+{
+  echo "Analysing JPEGs optimized by LibJPEG[Source :$x]"
+  rm -rf libjpeg-"$filename".csv
+  #Start csv generation
+  echo "Test_Image,Original_Size(bytes),Original_Size(bpp)" >> libjpeg-"$filename".csv
+  echo "$filename","$orig_size","$orig_size_bpp" >> libjpeg-"$filename".csv
+  echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> libjpeg-"$filename".csv
+  parallel --will-cite  --load 100% --delay 0.5  -k 'libjpeg_generation_handler {1}' ::: {100..70}
+  { head -n3 libjpeg-"$filename".csv; tail -n +4 libjpeg-"$filename".csv | sort -k1,1 -r -n -t,; } >libjpeg-"$filename".tmp && mv libjpeg-"$filename".tmp libjpeg-"$filename".csv
 #End csv generation
 }
+
+
 
 function av1_test
 {
@@ -356,55 +555,12 @@ function av1_test
   echo "Test_Image,Original_Size(bytes),Original_Size(bpp)" >> av1-"$filename".csv
   echo "$filename","$orig_size","$orig_size_bpp" >> av1-"$filename".csv
   echo "Quality(cq-level),Flatness(qm-min),Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> av1-"$filename".csv
-  #Do image generation in parallel
-  if [ "$only_csv" = false ]; then
-  cmd_arr=()
-  for q in 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40; do
-    for i in 4 6 8 10 12; do
-		cmd_arr+=("aomenc $x.y4m --i444 --enable-qm=1 --qm-min=$i --profile=3 -w $width -h $height -b 10 --end-usage=q --cq-level=$q -o ${x}_${q}_${i}.ivf")
-	done
-  done
-  for q in 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40; do
-    for i in 4 6 8 10 12; do
-		cmd_arr+=("aomdec ${x}_${q}_${i}.ivf --output-bit-depth=10 -o ${x}_${q}_${i}.y4m")
-	done
-  done
-  for q in 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40; do
-    for i in 4 6 8 10 12; do
-		cmd_arr+=("ffmpeg -nostats -loglevel 0 -y -i ${x}_${q}_${i}.y4m ${x}_${q}_${i}.png")
-	done
-  done
-  for q in 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40; do
-    for i in 4 6 8 10 12; do
-		cmd_arr+=("convert ${x}_${q}_${i}.png PNG24:${x}_${q}_${i}_ssimulacra.png")
-	done
-  done
-  #keep order to ensure we are able to generate png successfully
-  parallel --will-cite -k  ::: "${cmd_arr[@]}"
-  unset cmd_arr
-  fi
-  
-  for q in 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40; do
-    for i in 4 6 8 10 12; do
-      #if [ "$only_csv" = false ]; then		
-        # aomenc "$x".y4m --i444 --enable-qm=1 --qm-min="$i" --profile=3 -w "$width" -h "$height" -b 10 --end-usage=q --cq-level="$q" -o "$x"_"$q"_"$i".ivf
-        # aomdec "$x"_"$q"_"$i".ivf --output-bit-depth=10 -o "$x"_"$q"_"$i".y4m
-        # ffmpeg -nostats -loglevel 0 -y -i "$x"_"$q"_"$i".y4m "$x"_"$q"_"$i".png
-        # convert "$x"_"$q"_"$i".png PNG24:"$x"_"$q"_"$i"_ssimulacra.png # ssimulacra can't handle generated png
-      #fi
-      new_size=$(wc -c < "$x"_"$q"_"$i".ivf)
-      new_size_bpp=$(convert_to_bpp "$new_size")
-      butteraugli_score=$(butteraugli "$x" "$x"_"$q"_"$i".png)
-      ssimulacra_score=$(ssimulacra "$x" "$x"_"$q"_"$i"_ssimulacra.png)
-      compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
-      reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
-      printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
-      printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-      echo "$q","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> av1-"$filename".csv
-    done
-  done
+  parallel --will-cite --load 100% --delay 0.5 -k  'av1_generation_handler {1} {2}' ::: {10..40..2} ::: {4..12..2}
+  { head -n3 av1-"$filename".csv; tail -n +4 av1-"$filename".csv | sort -k1,1 -k2,2 -n  -t,; } >av1-"$filename".tmp && mv av1-"$filename".tmp av1-"$filename".csv
 #End csv generation
 }
+
+
 
 function libjpeg_2000_test
 {
@@ -414,26 +570,8 @@ function libjpeg_2000_test
   echo "Test_Image,Original_Size,Original_Size(bpp)" >> libjpeg2000-"$filename".csv
   echo "$filename","$orig_size","$orig_size_bpp" >> libjpeg2000-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> libjpeg2000-"$filename".csv
-  if [ "$only_csv" = false ]; then
-    echo "Generating JPEG 2000 images optimized by LibJPEG[Source :$x] in parallel"
-    parallel --will-cite 'opj_compress -i "{1}".ppm -r "{2}" -o "{3}"_openjpeg_q"{2}".jp2 -I -r "{2}"' ::: "$x" ::: {0..25}  ::: "$filename"
-    parallel --will-cite 'opj_decompress -i "{3}"_openjpeg_q"{2}".jp2  -o "{3}"_openjpeg_q"{2}".png' ::: "$x" ::: {0..25}  ::: "$filename"
-  fi
-  echo "Perform comparisions and store results in libjpeg2000-$filename.csv"
-  for ((i=0; i<=25; i++))
-  do
-    #opj_compress -i "$x".ppm -r "$i" -o "$filename"_openjpeg_q"$i".jp2 -I -r "$i"
-    #opj_decompress -i "$filename"_openjpeg_q"$i".jp2  -o "$filename"_openjpeg_q"$i".png
-    new_size=$(wc -c < "$filename"_openjpeg_q"$i".jp2)
-    new_size_bpp=$(convert_to_bpp "$new_size")
-    butteraugli_score=$(butteraugli "$x" "$filename"_openjpeg_q"$i".png)
-    ssimulacra_score=$(ssimulacra "$x" "$filename"_openjpeg_q"$i".png)
-    compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
-    reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
-    printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
-    printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> libjpeg2000-"$filename".csv
-  done
+  parallel --will-cite --load 100% --delay 0.5 -k 'libjpeg_2000_generation_handler {1}' ::: {0..25}
+  { head -n3 libjpeg2000-"$filename".csv; tail -n +4 libjpeg2000-"$filename".csv | sort -k1,1  -n -t,; } >libjpeg2000-"$filename".tmp && mv libjpeg2000-"$filename".tmp libjpeg2000-"$filename".csv
 #End csv generation
 }
 
@@ -445,54 +583,21 @@ function guetzli_test
   echo "Test_Image,Original_Size,Original_Size(bpp)" >> guetzli-"$filename".csv
   echo "$filename","$orig_size","$orig_size_bpp" >> guetzli-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> guetzli-"$filename".csv
-  if [ "$only_csv" = false ]; then
-    echo "Generating JPEGs optimized by Guetzli(This will take a while...BE patient)[Source :$x] in parallel"
-    parallel --will-cite 'guetzli --nomemlimit --quality "{2}"  "{1}"  "{3}"_guetzli_q"{2}".jpg' ::: "$x" ::: {100..84} ::: "$filename"
-  fi
-  echo "Perform comparisions and store results in guetzli-$filename.csv"
-  for ((i=100; i>=84; i--))
-  do
-    #guetzli --quality "$i"  "$x"  "$filename"_guetzli_q"$i".jpg
-    new_size=$(wc -c < "$filename"_guetzli_q"$i".jpg)
-    new_size_bpp=$(convert_to_bpp "$new_size")
-    butteraugli_score=$(butteraugli "$x" "$filename"_guetzli_q"$i".jpg)
-    ssimulacra_score=$(ssimulacra "$x" "$filename"_guetzli_q"$i".jpg)
-    compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
-    reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
-    printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
-    printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> guetzli-"$filename".csv
-  done
+  parallel --will-cite --load 100% --delay 0.5 -k  'guetzli_generation_handler {1}' ::: {100..84}
+  { head -n3 guetzli-"$filename".csv; tail -n +4 guetzli-"$filename".csv | sort -k1,1 -r -n -t,; } >guetzli-"$filename".tmp && mv guetzli-"$filename".tmp guetzli-"$filename".csv
 #End csv generation
 }
 
 function mozjpeg_test
 {
-  rm -rf mozjpeg-"$filename".csv
-  orig_size_bpp=$(convert_to_bpp "$orig_size")
   echo "Analysing JPEGs optimized by MozJPEG[Source :$x]"
+  rm -rf mozjpeg-"$filename".csv
   #Start csv generation
   echo "Test_Image,Original_Size,Original_Size(bpp)" >> mozjpeg-"$filename".csv
   echo "$filename","$orig_size","$orig_size_bpp" >> mozjpeg-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> mozjpeg-"$filename".csv
-  if [ "$only_csv" = false ]; then
-    echo "Generating JPEGs optimized by MozJPEG[Source :$x] in parallel"
-    parallel --will-cite 'cjpeg -sample 1x1 -quality "{1}" -outfile "{2}"_mozjpeg_q{1}.jpg {3}' ::: {100..70}  ::: "$filename" ::: "$x"
-  fi
-  echo "Perform comparisions and store results in mozjpeg-$filename.csv"
-  for ((i=100; i>=70; i--))
-  do
-    #cjpeg -optimize -sample 1x1 -quality "$i" -outfile "$filename"_mozjpeg_q"$i".jpg "$x"
-    new_size=$(wc -c < "$filename"_mozjpeg_q"$i".jpg)
-    new_size_bpp=$(convert_to_bpp "$new_size")
-    butteraugli_score=$(butteraugli "$x" "$filename"_mozjpeg_q"$i".jpg)
-    ssimulacra_score=$(ssimulacra "$x" "$filename"_mozjpeg_q"$i".jpg)
-    compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
-    reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
-    printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
-    printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> mozjpeg-"$filename".csv
-  done
+  parallel --will-cite --load 100% --delay 0.5 -k  'mozjpeg_generation_handler {1}' ::: {100..70}
+  { head -n3 mozjpeg-"$filename".csv; tail -n +4 mozjpeg-"$filename".csv | sort -k1,1 -r -n -t,; } >mozjpeg-"$filename".tmp && mv mozjpeg-"$filename".tmp mozjpeg-"$filename".csv
 #End csv generation
 }
 
@@ -500,32 +605,12 @@ function pik_test
 {
   echo "Analysing Pik images(This will take a while...BE patient)[Source :$x]"
   rm -rf pik-"$filename".csv
-  orig_size_bpp=$(convert_to_bpp "$orig_size")
 #Start csv generation
   echo "Test_Image,Original_Size,Original_Size(bpp)" >> pik-"$filename".csv
   echo "$filename","$orig_size","$orig_size_bpp" >> pik-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> pik-"$filename".csv
-  if [ "$only_csv" = false ]; then
-    echo "Generating Pik images(This will take a while...BE patient)[Source :$x] in parallel"
-    parallel --will-cite 'cpik "{1}" "{3}"_q"{2}".pik --distance "{2}"' ::: "$x" ::: $(seq 0.5 0.1 3.0) ::: "$filename"
-    parallel --will-cite 'dpik "{1}"_q"{2}".pik  "{1}"_pik_q"{2}".png ' ::: "$filename" ::: $(seq 0.5 0.1 3.0)
-  fi
-  echo "Perform comparisions and store results in pik-$filename.csv"
-  for i in $(seq 0.5 0.1 3.0)
-  do
-    #cpik  "$x" "$filename"_q"$i".pik --distance "$i"
-    new_size=$(wc -c < "$filename"_q"$i".pik)
-    new_size_bpp=$(convert_to_bpp "$new_size")
-    #convert to png to allow comparision
-    #dpik "$filename"_q"$i".pik "$filename"_pik_q"$i".png
-    butteraugli_score=$(butteraugli "$x" "$filename"_pik_q"$i".png)
-    ssimulacra_score=$(ssimulacra "$x" "$filename"_pik_q"$i".png)
-    compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
-    reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
-    printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
-    printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> pik-"$filename".csv
-  done
+  parallel --will-cite --load 100% --delay 0.5 -k  'pik_generation_handler {1}' ::: $(seq 0.5 0.1 3.0)
+  { head -n3 pik-"$filename".csv; tail -n +4 pik-"$filename".csv | sort -k1,1  -n -t,; } >pik-"$filename".tmp && mv pik-"$filename".tmp pik-"$filename".csv
 #End csv generation
 }
 
@@ -537,29 +622,8 @@ function webp_near_lossless
   echo "Test_Image,Original_Size,Original_Size(bpp)" >> webp-"$filename".csv
   echo "$filename","$orig_size","$orig_size_bpp" >> webp-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> webp-"$filename".csv
-  if [ "$only_csv" = false ]; then
-    echo "Generating Webp images(Near Lossless)[Source :$x] in parallel"
-    parallel --will-cite 'cwebp -sharp_yuv -mt -quiet -near_lossless "{1}" -q 100 -m 6 "{2}"  -o "{3}"_webp_q{1}.webp' ::: 60 40 ::: "$x" ::: "$filename"
-    parallel --will-cite 'dwebp -quiet "{1}"_webp_q"{2}".webp -o "{1}"_webp_q"{2}".png' ::: "$filename" ::: 60 40
-  fi
-  echo "Perform comparisions and store results in webp-$filename.csv"
-  for ((i=40; i<=60; i += 20))
-  do
-    #The -near_lossless is the quality parameter for near_lossless , levels - 0 , 20 , 40 , 60 , 80 , 100.
-    #only 40 and 60 are sensible
-    #cwebp -sharp_yuv -mt -quiet -near_lossless "$i" -q 100 -m 6 "$x"  -o "$filename"_webp_q"$i".webp
-    #convert to png to allow comparision
-    #dwebp -quiet "$filename"_webp_q"$i".webp -o "$filename"_webp_q"$i".png
-    new_size=$(wc -c < "$filename"_webp_q"$i".webp)
-    new_size_bpp=$(convert_to_bpp "$new_size")
-    butteraugli_score=$(butteraugli "$x" "$filename"_webp_q"$i".png)
-    ssimulacra_score=$(ssimulacra "$x" "$filename"_webp_q"$i".png)
-    compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
-    reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
-    printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
-    printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> webp-"$filename".csv
-  done
+  parallel --will-cite --load 100% --delay 0.5 -k 'webp_near_lossless_handler {1}' ::: 60 40
+  { head -n3 webp-"$filename".csv; tail -n +4 webp-"$filename".csv | sort -k1,1 -r -n -t,; } >webp-"$filename".tmp && mv webp-"$filename".tmp webp-"$filename".csv
 #End csv generation
 }
 
@@ -571,27 +635,8 @@ function webp_lossy
   echo "Test_Image,Original_Size,Original_Size(bpp)" >> webp_lossy-"$filename".csv
   echo "$filename","$orig_size","$orig_size_bpp" >> webp_lossy-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> webp_lossy-"$filename".csv
-  if [ "$only_csv" = false ]; then
-    echo "Generating Webp images(Lossy)[Source :$x] in parallel"
-    parallel  --will-cite 'cwebp -sharp_yuv   -mt -quiet -q "{1}" -m 6 "{2}"  -o "{3}"_webp_lossy_q"{1}".webp' ::: {100..70}  ::: "$x" ::: "$filename"
-    parallel  --will-cite 'dwebp -mt -quiet "{1}"_webp_lossy_q{2}.webp -o "{1}"_webp_lossy_q{2}.png' ::: "$filename" ::: {100..70}
-  fi
-  echo "Perform comparisions and store results in webp_lossy-$filename.csv"
-  for ((i=100; i>=70; i--))
-  do
-    #cwebp -sharp_yuv -pass 10 -mt -quiet -q "$i" -m 6 "$x"  -o "$filename"_webp_lossy_q"$i".webp
-    #convert to png to allow comparision
-    #dwebp -quiet "$filename"_webp_lossy_q"$i".webp -o "$filename"_webp_lossy_q"$i".png
-    new_size=$(wc -c < "$filename"_webp_lossy_q"$i".webp)
-    new_size_bpp=$(convert_to_bpp "$new_size")
-    butteraugli_score=$(butteraugli "$x" "$filename"_webp_lossy_q"$i".png)
-    ssimulacra_score=$(ssimulacra "$x" "$filename"_webp_lossy_q"$i".png)
-    compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
-    reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
-    printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
-    printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> webp_lossy-"$filename".csv
-  done
+  parallel --will-cite --load 100% --delay 0.5 -k  'webp_lossy_handler {1}' ::: {100..70}
+  { head -n3 webp_lossy-"$filename".csv; tail -n +4 webp_lossy-"$filename".csv | sort -k1,1 -r -n -t,; } >webp_lossy-"$filename".tmp && mv webp_lossy-"$filename".tmp webp_lossy-"$filename".csv
 #End csv generation
 }
 
@@ -603,27 +648,8 @@ function bpg_lossy
   echo "Test_Image,Original_Size,Original_Size(bpp)" >> bpg-"$filename".csv
   echo "$filename","$orig_size","$orig_size_bpp" >> bpg-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> bpg-"$filename".csv
-  if [ "$only_csv" = false ]; then
-    echo "Generating BPG images(x265 encoder - lossy)[Source :$x] in parallel"
-    parallel --will-cite 'bpgenc -q "{1}" -f 444  -m 9 "{2}" -o "{3}"_bpg_q{1}.bpg' ::: {0..37}  ::: "$x" ::: "$filename"
-    parallel --will-cite 'bpgdec "{1}"_bpg_q"{2}".bpg -o "{1}"_bpg_q{2}.png' ::: "$filename" ::: {0..37}
-  fi
-  echo "Perform comparisions and store results in bpg-$filename.csv"
-  for ((i=0; i<=37; i++))
-  do
-    #bpgenc -q "$i" -f 444  -m 9 "$x" -o "$filename"_bpg_q"$i".bpg
-    #convert to png to allow comparision
-    #bpgdec "$filename"_bpg_q"$i".bpg -o "$filename"_bpg_q"$i".png
-    new_size=$(wc -c < "$filename"_bpg_q"$i".bpg)
-    new_size_bpp=$(convert_to_bpp "$new_size")
-    butteraugli_score=$(butteraugli "$x" "$filename"_bpg_q"$i".png)
-    ssimulacra_score=$(ssimulacra "$x" "$filename"_bpg_q"$i".png)
-    compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
-    reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
-    printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
-    printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> bpg-"$filename".csv
-  done
+  parallel --will-cite --load 100% --delay 0.5 -k  'bpg_lossy_handler {1}' ::: {0..37}
+  { head -n3 bpg-"$filename".csv; tail -n +4 bpg-"$filename".csv | sort -k1,1  -n -t,; } >bpg-"$filename".tmp && mv bpg-"$filename".tmp bpg-"$filename".csv
 #End csv generation
 }
 
@@ -635,28 +661,9 @@ function bpg_lossy_jctvc
   echo "Test_Image,Original_Size,Original_Size(bpp)" >> bpg_jctvc-"$filename".csv
   echo "$filename","$orig_size","$orig_size_bpp" >> bpg_jctvc-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> bpg_jctvc-"$filename".csv
-  if [ "$only_csv" = false ]; then
-    echo "Generating BPG images(jctvc encoder - lossy)[Source :$x] in parallel"
-    parallel --will-cite 'bpgenc -q "{1}" -f 444  -m 9 -e jctvc "{2}" -o "{3}"_bpg_jctvc_q{1}.bpg' ::: {0..37}  ::: "$x" ::: "$filename"
-    parallel --will-cite 'bpgdec "{1}"_bpg_jctvc_q"{2}".bpg -o "{1}"_bpg_jctvc_q{2}.png' ::: "$filename" ::: {0..37}
-  fi
-  echo "Perform comparisions and store results in bpg_jctvc-$filename.csv"
-  for ((i=0; i<=37; i++))
-  do
-    #bpgenc -q "$i" -f 444  -m 9 -e jctvc "$x" -o "$filename"_bpg_jctvc_q"$i".bpg
-    #convert to png to allow comparision
-    #bpgdec "$filename"_bpg_jctvc_q"$i".bpg -o "$filename"_bpg_jctvc_q"$i".png
-    new_size=$(wc -c < "$filename"_bpg_jctvc_q"$i".bpg)
-    new_size_bpp=$(convert_to_bpp "$new_size")
-    butteraugli_score=$(butteraugli "$x" "$filename"_bpg_jctvc_q"$i".png)
-    ssimulacra_score=$(ssimulacra "$x" "$filename"_bpg_jctvc_q"$i".png)
-    compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
-    reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
-    printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
-    printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> bpg_jctvc-"$filename".csv
-  done
-#End csv generation
+  parallel --will-cite --load 100% --delay 0.5 -k 'bpg_lossy_jctvc_handler {1}' ::: {0..37}
+  { head -n3 bpg_jctvc-"$filename".csv; tail -n +4 bpg_jctvc-"$filename".csv | sort -k1,1 -n -t,; } >bpg_jctvc-"$filename".tmp && mv bpg_jctvc-"$filename".tmp bpg_jctvc-"$filename".csv
+  #End csv generation
 }
 
 function flif_lossy
@@ -667,28 +674,9 @@ function flif_lossy
   echo "Test_Image,Original_Size,Original_Size(bpp)" >> flif_lossy-"$filename".csv
   echo "$filename","$orig_size","$orig_size_bpp" >> flif_lossy-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> flif_lossy-"$filename".csv
-  if [ "$only_csv" = false ]; then
-    echo "Generating FLIF images(Lossy)[Source :$x] in parallel"
-    parallel --will-cite 'flif -e -E100 -o -Q"{1}"  "{2}" "{3}"_lossy_q"{1}".flif' ::: {100..0}  ::: "$x" ::: "$filename"
-    parallel --will-cite 'flif -d "{1}"_lossy_q"{2}".flif "{1}"_flif_lossy_q{2}.png' ::: "$filename" ::: {100..0}
-  fi
-  echo "Perform comparisions and store results in flif_lossy-$filename.csv"
-  for ((i=100; i>=0; i--))
-  do
-    #flif -e -E100 -o -Q"$i"  "$x" "$filename"_lossy_q"$i".flif
-    #convert to png to allow comparision
-    #flif -d "$filename"_lossy_q"$i".flif "$filename"_flif_lossy_q"$i".png
-    new_size=$(wc -c < "$filename"_lossy_q"$i".flif)
-    new_size_bpp=$(convert_to_bpp "$new_size")
-    butteraugli_score=$(butteraugli "$x" "$filename"_flif_lossy_q"$i".png)
-    ssimulacra_score=$(ssimulacra "$x" "$filename"_flif_lossy_q"$i".png)
-    compression_rate=$(echo "(($orig_size - $new_size) / $orig_size) * 100" | bc -l)
-    reference_compression_rate=$(echo "(($reference_jpg_size - $new_size) / $reference_jpg_size) * 100" | bc -l)
-    printf -v compression_rate "%0.2f" "$compression_rate" #set to 2 dp
-    printf -v reference_compression_rate "%0.2f" "$reference_compression_rate" #set to 2 dp
-    echo "$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> flif_lossy-"$filename".csv
-  done
-#End csv generation
+  parallel --will-cite --load 100% --delay 0.5 -k  'flif_lossy_handler {1}' ::: {100..0}
+  { head -n3 flif_lossy-"$filename".csv; tail -n +4 flif_lossy-"$filename".csv | sort -k1,1 -r -n -t,; } >flif_lossy-"$filename".tmp && mv flif_lossy-"$filename".tmp flif_lossy-"$filename".csv
+  #End csv generation
 }
 
 
@@ -731,6 +719,7 @@ function main
   only_flif_lossy=false
   only_plots=false
   only_csv=false
+  only_image_generation=false
   combine_plots=false
   target_size=0
   for x in "$@"; do
@@ -794,6 +783,11 @@ function main
         only_bpg_lossy_jctvc=true
         continue
       fi
+	  
+	  if [ "$x" == "--only-bpg-lossy" ]; then
+        only_bpg_lossy=true
+        continue
+      fi
 
 
       if [ "$x" == "--only-mozjpeg" ]; then
@@ -825,14 +819,21 @@ function main
       fi
 	  
 	  if [[ "$x" =~ ^--path=.* ]] ; then
-	    #TODO need to test
+	    #TODO need to test , need to fix doesn't work
 		images=()
-        directory_path=${x#--path=}/*.png
-		for f in $directory_path; do
-			 images+=("$f")
-		done
+        # directory_path="${x#--path=}/*.png"
+		# for f in $directory_path; do
+			 # images+=("$f")
+		# done
+		for file in *.png; do images+=("$f"); done
 		set -- "$@" "${images[@]}"
+		echo "$@"
 		unset images
+        continue
+      fi
+	  
+	  if [ "$x" == "--only-image-generation" ]; then
+        only_image_generation=true
         continue
       fi
     done
@@ -863,7 +864,7 @@ function main
   list_mozjpeg=()
   list_av1=()
   list_webp=()
-  list_webp_lossy=()
+  list_webp_lossy=()  
   for x in "$@"; do
     #skip if we are not dealing with an image
     if [ "${x: 0:2}" == "--" ]; then
@@ -874,58 +875,108 @@ function main
     orig_size=$(wc -c < "$x")
     #convert "$x" -quality 93 -sampling-factor 1x1  "$filename"_libjpeg_reference.jpg
     convert "$x" "$x".ppm # libjpeg will require ppm file as input
-    jpeg -q 93 -oz -v -qt 3 -h  "$x".ppm "$filename"_libjpeg_reference.jpg &> /dev/null
+	jpeg -q 93 -oz -h -qt 3 -qv "$x".ppm "$filename"_libjpeg_reference.jpg &> /dev/null
     reference_jpg_size=$(wc -c < "$filename"_libjpeg_reference.jpg)
     width=$(identify -format "%w" "$x")
     height=$(identify -format "%h" "$x")
-	orig_size_bpp=$(convert_to_bpp "$orig_size")
+    orig_size_bpp=$(convert_to_bpp "$orig_size")
     reference_jpg_bpp=$(convert_to_bpp "$reference_jpg_size")
-
+	export x
+	export filename
+	export orig_size
+	export reference_jpg_size
+	export width
+	export height
+	export orig_size_bpp
+	export reference_jpg_bpp
+	export -f convert_to_bpp libjpeg_test libjpeg_2000_test mozjpeg_test pik_test av1_test webp_near_lossless webp_lossy bpg_lossy bpg_lossy_jctvc flif_lossy guetzli_test
+	export only_csv
+    #TODO execute functions in parallel
+	func_arr=()
     if [ "$only_libjpeg" = true ] || [ "$only_csv" = true ] || [ "$has_options" = false ]; then
-      libjpeg_test
+      #libjpeg_test
+	  export -f libjpeg_test
+	  func_arr+=("libjpeg_test")
     fi
+	
 
     if [ "$only_libjpeg_2000" = true ] || [ "$only_csv" = true ] || [ "$has_options" = false ]; then
-      libjpeg_2000_test
+      #libjpeg_2000_test
+	  export -f libjpeg_2000_test
+	  func_arr+=("libjpeg_2000_test")
     fi
 
     if [ "$only_mozjpeg" = true ] || [ "$only_csv" = true ] || [ "$has_options" = false ]; then
-      mozjpeg_test
-    fi
-
-    if [ "$only_guetzli" = true ] || [ "$only_csv" = true ] || [ "$has_options" = false ]; then
-      guetzli_test
+      #mozjpeg_test
+	  export -f mozjpeg_test
+	  func_arr+=("mozjpeg_test")
     fi
 
     if [ "$only_pik" = true ] || [ "$only_csv" = true ]  || [ "$has_options" = false ]; then
-      pik_test
-    fi
-
-    if [ "$only_av1" = true ] || [ "$only_csv" = true ] || [ "$has_options" = false ]; then
-      av1_test
+      #pik_test
+      export -f pik_test	  
+	  func_arr+=("pik_test")
     fi
 
     if [ "$only_webp" = true ] || [ "$only_csv" = true ] || [ "$has_options" = false ]; then
-      webp_near_lossless
+      #webp_near_lossless 
+	  export -f webp_near_lossless
+	  func_arr+=("webp_near_lossless")
     fi
 
     if [ "$only_webp_lossy" = true ] || [ "$only_csv" = true ] || [ "$has_options" = false ]; then
-      webp_lossy
+      #webp_lossy
+	  export -f webp_lossy
+      func_arr+=("webp_lossy")	  
     fi
 
     if [ "$only_bpg_lossy" = true ] || [ "$only_csv" = true ] || [ "$has_options" = false ]; then
-      bpg_lossy
+      #bpg_lossy
+	  export -f bpg_lossy
+	  func_arr+=("bpg_lossy")
     fi
 
     if [ "$only_bpg_lossy_jctvc" = true ] || [ "$only_csv" = true ] || [ "$has_options" = false ]; then
-      bpg_lossy_jctvc
+      #bpg_lossy_jctvc
+	  export -f bpg_lossy_jctvc
+	  func_arr+=("bpg_lossy_jctvc")
     fi
 
     if [ "$only_flif_lossy" = true ] || [ "$only_csv" = true ] || [ "$has_options" = false ]; then
-      flif_lossy
+      #flif_lossy
+	  export -f flif_lossy
+	  func_arr+=("flif_lossy")
     fi
-
-
+	
+	if [ "$only_av1" = true ] || [ "$only_csv" = true ] || [ "$has_options" = false ]; then
+       #av1_test
+	   export -f av1_test
+	   func_arr+=("av1_test")
+    fi
+	
+	if [ "$only_guetzli" = true ] || [ "$only_csv" = true ] || [ "$has_options" = false ]; then
+      #guetzli_test
+	  export -f guetzli_test
+      func_arr+=("guetzli_test")	  
+    fi
+	
+	
+	
+	if [[ ${func_arr[@]} ]]; then
+	    #func_arr is NOT empty
+		parallel --will-cite --load 100%  --delay 0.5 -k '{1}' ::: "${func_arr[@]}"
+	fi
+	
+	
+	if [ "$only-image-generation" = true ]; then
+	    zipfile_name=result_corpus_csv_only_$(date "+%Y.%m.%d-%H.%M.%S").zip
+		files_to_zip+=("libjpeg-${filename}.csv" "libjpeg2000-${filename}.csv" "guetzli-${filename}.csv" "pik-${filename}.csv" "av1-${filename}.csv" "webp-${filename}.csv" "webp_lossy-${filename}.csv"  "bpg-${filename}.csv" "flif_lossy-${filename}.csv" "mozjpeg-${filename}.csv" "bpg_jctvc-${filename}.csv" "${filename}_butteraugli_plot.png" "${filename}_ssimulacra_plot.png")
+		zip "$zipfile_name" "${files_to_zip[@]}"
+		current_dir=$(pwd)/"$zipfile_name"
+		echo "Success! Download results : $current_dir"
+		exit 0
+	fi
+	
     #plot the graphs
     echo "Generating the plots[Source :$x]"
     rm -rf "$filename"_butteraugli_plot.png "$filename"_ssimulacra_plot.png
@@ -1003,7 +1054,7 @@ function main
 	  fi
 
       echo "Generating heatmaps + comparision csv"
-      echo "Encoder,Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> comparision-"$filename".csv
+      echo "Encoder,Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,PSNR,SSIM,Compression Rate(%),Reference Compression Rate(%)" >> comparision-"$filename".csv
 
       #pik
       while read -r line
@@ -1018,9 +1069,11 @@ function main
         #New size >= target_size
         if [ "$new_size" -ge "$target_size" ]; then
           butteraugli_score=$(butteraugli "$x" "$filename"_pik_q"$i".png "$filename"_pik_q"$i"_hm.ppm)
+		  psnr_score=$(compare -metric PSNR "$x" "$filename"_pik_q"$i".png /dev/null 2>&1)
+		  ssim_score=$(compare -metric SSIM "$x" "$filename"_pik_q"$i".png /dev/null 2>&1)
           convert "$filename"_pik_q"$i"_hm.ppm "$filename"_pik_q"$i"_hm.png
           files_to_zip+=("${filename}_pik_q${i}_hm.png" "${filename}_pik_q${i}.png")
-          echo "Pik","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
+          echo "Pik","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$psnr_score","$ssim_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
           break
         fi
       done < <(tac "pik-$filename.csv" | head -n -3)
@@ -1038,9 +1091,11 @@ function main
         #New size >= target_size
         if [ "$new_size" -ge "$target_size" ]; then
           butteraugli_score=$(butteraugli "$x" "$filename"_libjpeg_q"$i".jpg "$filename"_libjpeg_q"$i"_hm.ppm)
+		  psnr_score=$(compare -metric PSNR "$x" "$filename"_libjpeg_q"$i".jpg /dev/null 2>&1)
+		  ssim_score=$(compare -metric SSIM "$x" "$filename"_libjpeg_q"$i".jpg /dev/null 2>&1)
           convert "$filename"_libjpeg_q"$i"_hm.ppm "$filename"_libjpeg_q"$i"_hm.png
           files_to_zip+=("${filename}_libjpeg_q${i}_hm.png" "${filename}_libjpeg_q${i}.jpg") 
-          echo "LibJPEG","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
+          echo "LibJPEG","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$psnr_score","$ssim_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
           break
         fi
       done < <(tac "libjpeg-$filename.csv" | head -n -3) 
@@ -1058,9 +1113,11 @@ function main
         #New size >= target_size
         if [ "$new_size" -ge "$target_size" ]; then
           butteraugli_score=$(butteraugli "$x" "$filename"_openjpeg_q"$i".png "$filename"_openjpeg_q"$i"_hm.ppm)
+		  psnr_score=$(compare -metric PSNR "$x" "$filename"_openjpeg_q"$i".png /dev/null 2>&1)
+		  ssim_score=$(compare -metric SSIM "$x" "$filename"_openjpeg_q"$i".png /dev/null 2>&1)
           convert "$filename"_openjpeg_q"$i"_hm.ppm "$filename"_openjpeg_q"$i"_hm.png
           files_to_zip+=("${filename}_openjpeg_q${i}_hm.png" "${filename}_openjpeg_q${i}.png")
-          echo "OpenJPEG","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
+          echo "OpenJPEG","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$psnr_score","$ssim_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
           break
         fi
       done < <(tac "libjpeg2000-$filename.csv" | head -n -3) 
@@ -1078,9 +1135,11 @@ function main
         #New size >= target_size
         if [ "$new_size" -ge "$target_size" ]; then
           butteraugli_score=$(butteraugli "$x" "$filename"_guetzli_q"$i".jpg "$filename"_guetzli_q"$i"_hm.ppm)
+		  psnr_score=$(compare -metric PSNR "$x" "$filename"_guetzli_q"$i".jpg /dev/null 2>&1)
+		  ssim_score=$(compare -metric SSIM "$x" "$filename"_guetzli_q"$i".jpg /dev/null 2>&1)
           convert "$filename"_guetzli_q"$i"_hm.ppm "$filename"_guetzli_q"$i"_hm.png
           files_to_zip+=("${filename}_guetzli_q${i}_hm.png" "${filename}_guetzli_q${i}.jpg")
-          echo "Guetzli","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
+          echo "Guetzli","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$psnr_score","$ssim_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
           break
         fi
       done < <(tac "guetzli-$filename.csv" | head -n -3) 
@@ -1098,9 +1157,11 @@ function main
         #New size >= target_size
         if [ "$new_size" -ge "$target_size" ]; then
           butteraugli_score=$(butteraugli "$x" "$filename"_flif_lossy_q"$i".png "$filename"_flif_lossy_q"$i"_hm.ppm)
+		  psnr_score=$(compare -metric PSNR "$x" "$filename"_flif_lossy_q"$i".png /dev/null 2>&1)
+		  ssim_score=$(compare -metric SSIM "$x" "$filename"_flif_lossy_q"$i".png /dev/null 2>&1)
           convert "$filename"_flif_lossy_q"$i"_hm.ppm "$filename"_flif_lossy_q"$i"_hm.png
           files_to_zip+=("${filename}_flif_lossy_q${i}_hm.png"  "${filename}_flif_lossy_q${i}.png")
-          echo "Flif Lossy","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
+          echo "Flif Lossy","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$psnr_score","$ssim_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
           break
         fi
       done < <(tac "flif_lossy-$filename.csv" | head -n -3) 
@@ -1118,9 +1179,11 @@ function main
         #New size >= target_size
         if [ "$new_size" -ge "$target_size" ]; then
           butteraugli_score=$(butteraugli "$x" "$filename"_bpg_q"$i".png "$filename"_bpg_q"$i"_hm.ppm)
+		  psnr_score=$(compare -metric PSNR "$x" "$filename"_bpg_q"$i".png /dev/null 2>&1)
+		  ssim_score=$(compare -metric SSIM "$x" "$filename"_bpg_q"$i".png /dev/null 2>&1)
           convert "$filename"_bpg_q"$i"_hm.ppm "$filename"_bpg_q"$i"_hm.png
           files_to_zip+=("${filename}_bpg_q${i}_hm.png" "${filename}_bpg_q${i}.png")
-          echo "BPG(x265) Lossy","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
+          echo "BPG(x265) Lossy","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$psnr_score","$ssim_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
           break
         fi
       done < <(tac "bpg-$filename.csv" | head -n -3) 
@@ -1138,9 +1201,11 @@ function main
         #New size >= target_size
         if [ "$new_size" -ge "$target_size" ]; then
           butteraugli_score=$(butteraugli "$x" "$filename"_bpg_jctvc_q"$i".png "$filename"_bpg_jctvc_q"$i"_hm.ppm)
+		  psnr_score=$(compare -metric PSNR "$x" "$filename"_bpg_jctvc_q"$i".png /dev/null 2>&1)
+		  ssim_score=$(compare -metric SSIM "$x" "$filename"_bpg_jctvc_q"$i".png /dev/null 2>&1)
           convert "$filename"_bpg_jctvc_q"$i"_hm.ppm "$filename"_bpg_jctvc_q"$i"_hm.png
           files_to_zip+=("${filename}_bpg_jctvc_q${i}_hm.png" "${filename}_bpg_jctvc_q${i}.png")
-          echo "BPG(jctvc) Lossy","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
+          echo "BPG(jctvc) Lossy","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$psnr_score","$ssim_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
           break
         fi
       done < <(tac "bpg_jctvc-$filename.csv" | head -n -3)
@@ -1158,9 +1223,11 @@ function main
         #New size >= target_size
         if [ "$new_size" -ge "$target_size" ]; then
 		  butteraugli_score=$(butteraugli "$x" "$filename"_mozjpeg_q"$i".jpg "$filename"_mozjpeg_q"$i"_hm.ppm)
+		  psnr_score=$(compare -metric PSNR "$x" "$filename"_mozjpeg_q"$i".jpg /dev/null 2>&1)
+		  ssim_score=$(compare -metric SSIM "$x" "$filename"_mozjpeg_q"$i".jpg /dev/null 2>&1)
           convert "$filename"_mozjpeg_q"$i"_hm.ppm  "$filename"_mozjpeg_q"$i"_hm.png
           files_to_zip+=("${filename}_mozjpeg_q${i}_hm.png" "${filename}_mozjpeg_q${i}.jpg")
-          echo "MozJPEG","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
+          echo "MozJPEG","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$psnr_score","$ssim_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
           break
         fi
       done < <(tac "mozjpeg-$filename.csv" | head -n -3)
@@ -1178,13 +1245,15 @@ function main
 		reference_compression_rate=$(echo "$line" | cut -d',' -f8)
       #New size >= target_size
       if [ "$new_size" -ge "$target_size" ]; then
-		butteraugli_score=$(butteraugli "$x" "$x"_"$i"_"$q".png "$x"_"$i"_"$q"_hm.ppm)
-		convert "$x"_"$i"_"$q"_hm.ppm "$x"_"$i"_"$q"_hm.png
-		files_to_zip+=("${x}_${i}_${q}_hm.png" "${x}_${i}_${q}.png")
-		echo "AV1","$q-$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
+		butteraugli_score=$(butteraugli "$x" "$x"_"$q"_"$i".png "$x"_"$q"_"$i"_hm.ppm)
+		psnr_score=$(compare -metric PSNR  "$x" "$x"_"$q"_"$i".png /dev/null 2>&1)
+		ssim_score=$(compare -metric SSIM  "$x" "$x"_"$q"_"$i".png /dev/null 2>&1)
+		convert "$x"_"$q"_"$i"_hm.ppm "$x"_"$q"_"$i"_hm.png
+		files_to_zip+=("${x}_${q}_${i}_hm.png" "${x}_${q}_${i}.png")
+		echo "AV1","$q-$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$psnr_score","$ssim_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
 		break
       fi
-      done < <(tac "av1-$filename.csv" | head -n -3 | sort  -k3 -n -t,)
+      done < <(tac "av1-$filename.csv" | head -n -3 | sort  -k3,3 -n -t,)
 
 
       #webp lossy
@@ -1200,9 +1269,11 @@ function main
         #New size >= target_size
         if [ "$new_size" -ge "$target_size" ]; then
           butteraugli_score=$(butteraugli "$x" "$filename"_webp_lossy_q"$i".png "$filename"_webp_lossy_q"$i"_hm.ppm)
+		  psnr_score=$(compare -metric PSNR  "$x" "$filename"_webp_lossy_q"$i".png /dev/null 2>&1)
+		  ssim_score=$(compare -metric SSIM  "$x" "$filename"_webp_lossy_q"$i".png /dev/null 2>&1)
           convert "$filename"_webp_lossy_q"$i"_hm.ppm "$filename"_webp_lossy_q"$i"_hm.png
           files_to_zip+=("${filename}_webp_lossy_q${i}.png" "${filename}_webp_lossy_q${i}_hm.png")
-          echo "Webp(Lossy)","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
+          echo "Webp(Lossy)","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$psnr_score","$ssim_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
           break
         fi
       done < <(tac "webp_lossy-$filename.csv" | head -n -3)
@@ -1221,9 +1292,11 @@ function main
         #New size >= target_size
         if [ "$new_size" -ge "$target_size" ]; then
           butteraugli_score=$(butteraugli "$x" "$filename"_webp_q"$i".png "$filename"_webp_q"$i"_hm.ppm)
+		  psnr_score=$(compare -metric PSNR  "$x" "$filename"_webp_q"$i".png /dev/null 2>&1)
+		  ssim_score=$(compare -metric SSIM  "$x" "$filename"_webp_q"$i".png /dev/null 2>&1)
           convert "$filename"_webp_q"$i"_hm.ppm "$filename"_webp_q"$i"_hm.png
           files_to_zip+=("${filename}_webp_q${i}.png" "${filename}_webp_q${i}_hm.png")
-          echo "Webp","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
+          echo "Webp","$i","$new_size","$new_size_bpp","$butteraugli_score","$ssimulacra_score","$psnr_score","$ssim_score","$compression_rate","$reference_compression_rate" >> comparision-"$filename".csv
           break
         fi
       done < <(tac "webp-$filename.csv" | head -n -3)
