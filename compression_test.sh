@@ -179,10 +179,10 @@ function plotcsv_graph
 	set xrange [:8]
 	set arrow from $reference_jpg_bpp, graph 0 to $reference_jpg_bpp, graph 1 nohead lt 0
 	plot "pik-$2.csv" using 3:4 w l ls 1 title 'pik', \
-    "libjpeg-$2.csv" using 3:4 w l ls 2  title 'libjpeg', \
+    	"libjpeg-$2.csv" using 3:4 w l ls 2  title 'libjpeg', \
 	"libjpeg2000-$2.csv" using 3:4 w l ls 3  title 'OpenJPEG(JPEG 2000)', \
-    "guetzli-$2.csv" using 3:4 w l ls 4 title 'guetzli', \
-    "flif_lossy-$2.csv" using 3:4 w l ls 5 title 'flif-lossy', \
+    	"guetzli-$2.csv" using 3:4 w l ls 4 title 'guetzli', \
+    	"flif_lossy-$2.csv" using 3:4 w l ls 5 title 'flif-lossy', \
 	"bpg-$2.csv" using 3:4 w l ls 6 title 'bpg(x265)', \
 	"bpg_jctvc-$2.csv" using 3:4 w l ls 7 title 'bpg(jctvc)', \
 	"mozjpeg-$2.csv" using 3:4 w l ls 8  title 'MozJPEG', \
@@ -221,10 +221,10 @@ function plotcsv_graph_ssimulacra
 	set xrange [:8]
 	set arrow from $reference_jpg_bpp, graph 0 to $reference_jpg_bpp, graph 1 nohead lt 0
 	plot "pik-$2.csv" using 3:5 w l ls 1 title 'pik', \
-    "libjpeg-$2.csv" using 3:5 w l ls 2 title 'libjpeg', \
+    	"libjpeg-$2.csv" using 3:5 w l ls 2 title 'libjpeg', \
 	"libjpeg2000-$2.csv" using 3:5 w l ls 3 title 'OpenJPEG(JPEG 2000)', \
-    "guetzli-$2.csv" using 3:5 w l ls 4 title 'guetzli', \
-    "flif_lossy-$2.csv" using 3:5 w l ls 5 title 'flif-lossy', \
+    	"guetzli-$2.csv" using 3:5 w l ls 4 title 'guetzli', \
+    	"flif_lossy-$2.csv" using 3:5 w l ls 5 title 'flif-lossy', \
 	"bpg-$2.csv" using 3:5 w l ls 6 title 'bpg(x265)', \
 	"bpg_jctvc-$2.csv" using 3:5 w l ls 7 title 'bpg(jctvc)', \
 	"mozjpeg-$2.csv" using 3:5 w l ls 8 title 'MozJPEG', \
@@ -262,10 +262,10 @@ function plotcsv_graph_merge
 	set xtics font ", 12"
 	set xrange [:8]
 	plot "pik-merge.csv" using 2:3 w l ls 1  title 'pik', \
-    "libjpeg-merge.csv" using 2:3 w l  ls 2 title 'libjpeg', \
+    	"libjpeg-merge.csv" using 2:3 w l  ls 2 title 'libjpeg', \
 	"libjpeg2000-merge.csv" using 2:3  w l ls 3 title 'OpenJPEG(JPEG 2000)', \
-    "guetzli-merge.csv" using 2:3 w l ls 4 title 'guetzli', \
-    "flif_lossy-merge.csv" using 2:3 w l ls 5 title 'flif-lossy', \
+    	"guetzli-merge.csv" using 2:3 w l ls 4 title 'guetzli', \
+    	"flif_lossy-merge.csv" using 2:3 w l ls 5 title 'flif-lossy', \
 	"bpg-merge.csv" using 2:3 w l ls 6 title 'bpg(x265)', \
 	"bpg_jctvc-merge.csv" using 2:3 w l ls 7 title 'bpg(jctvc)', \
 	"mozjpeg-merge.csv" using 2:3 w l ls 8 title 'MozJPEG', \
@@ -302,10 +302,10 @@ function plotcsv_graph_ssimulacra_merge
 	set xtics font ", 12"
 	set xrange [:8]
 	plot "pik-merge.csv" using 2:4 w l ls 1 title 'pik', \
-    "libjpeg-merge.csv" using 2:4 w l ls 2 title 'libjpeg', \
+    	"libjpeg-merge.csv" using 2:4 w l ls 2 title 'libjpeg', \
 	"libjpeg2000-merge.csv" using 2:4 w l ls 3 title 'OpenJPEG(JPEG 2000)', \
-    "guetzli-merge.csv" using 2:4 w l ls 4 title 'guetzli', \
-    "flif_lossy-merge.csv" using 2:4 w l ls 5 title 'flif-lossy', \
+    	"guetzli-merge.csv" using 2:4 w l ls 4 title 'guetzli', \
+    	"flif_lossy-merge.csv" using 2:4 w l ls 5 title 'flif-lossy', \
 	"bpg-merge.csv" using 2:4 w l ls 6 title 'bpg(x265)', \
 	"bpg_jctvc-merge.csv" using 2:4 w l ls 7 title 'bpg(jctvc)', \
 	"mozjpeg-merge.csv" using 2:4 w l ls 8 title 'MozJPEG', \
