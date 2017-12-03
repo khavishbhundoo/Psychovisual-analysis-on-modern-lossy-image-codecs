@@ -223,7 +223,7 @@ function plotcsv_graph_ssimulacra
 	plot "pik-$2.csv" using 3:5 w l ls 1 title 'pik', \
     	"libjpeg-$2.csv" using 3:5 w l ls 2 title 'libjpeg', \
 	"libjpeg2000-$2.csv" using 3:5 w l ls 3 title 'OpenJPEG(JPEG 2000)', \
-   	"guetzli-$2.csv" using 3:5 w l ls 4 title 'guetzli', \
+    	"guetzli-$2.csv" using 3:5 w l ls 4 title 'guetzli', \
     	"flif_lossy-$2.csv" using 3:5 w l ls 5 title 'flif-lossy', \
 	"bpg-$2.csv" using 3:5 w l ls 6 title 'bpg(x265)', \
 	"bpg_jctvc-$2.csv" using 3:5 w l ls 7 title 'bpg(jctvc)', \
@@ -246,7 +246,7 @@ function plotcsv_graph_merge
     	set style line 5 lt 1 lw 2 lc rgb '#FF75FE' ps 0 # pink
     	set style line 6 lt 1 lw 2 lc rgb '#08D8DD' ps 0 # cyan
     	set style line 7 lt 1 lw 2 lc rgb '#A90B3C' ps 0 # brown
-    	set style line 8 lt 1 lw 2 lc rgb '#F67A4E' ps 0 # orange
+   	set style line 8 lt 1 lw 2 lc rgb '#F67A4E' ps 0 # orange
 	set style line 9 lt 1 lw 2 lc rgb '#09B460' ps 0 # dark green
 	set style line 10 lt 1 lw 2 lc rgb '#EFEF3A' ps 0 # yellow
     	set style line 11 lt 1 lw 2 lc rgb '#A6F687' ps 0 # light green
@@ -729,7 +729,7 @@ function pik_test
 #End csv generation
 }
 
-function webp_near_lossless
+function webp_near_lossless_test
 {
   x="$1"
   filename=$(basename "$x")
@@ -748,7 +748,7 @@ function webp_near_lossless
 #End csv generation
 }
 
-function webp_lossy
+function webp_lossy_test
 {
   x="$1"
   filename=$(basename "$x")
@@ -767,7 +767,7 @@ function webp_lossy
 #End csv generation
 }
 
-function bpg_lossy
+function bpg_lossy_test
 {
   x="$1"
   filename=$(basename "$x")
@@ -786,7 +786,7 @@ function bpg_lossy
 #End csv generation
 }
 
-function bpg_lossy_jctvc
+function bpg_lossy_jctvc_test
 {
   x="$1"
   filename=$(basename "$x")
@@ -805,7 +805,7 @@ function bpg_lossy_jctvc
   #End csv generation
 }
 
-function flif_lossy
+function flif_lossy_test
 {
   x="$1"
   filename=$(basename "$x")
@@ -1159,20 +1159,20 @@ function main
   export -f mozjpeg_test
   parallel --will-cite --load 100%   -k 'mozjpeg_test {1}' ::: "${list_mozjpeg[@]}"
   #Webp
-  export -f webp_near_lossless
-  parallel --will-cite --load 100%   -k 'webp_near_lossless {1}' ::: "${list_webp[@]}"
+  export -f webp_near_lossless_test
+  parallel --will-cite --load 100%   -k 'webp_near_lossless_test {1}' ::: "${list_webp[@]}"
   #Webp lossy
-  export -f webp_lossy
-  parallel --will-cite --load 100%   -k 'webp_lossy {1}' ::: "${list_webp_lossy[@]}"
+  export -f webp_lossy_test
+  parallel --will-cite --load 100%   -k 'webp_lossy_test {1}' ::: "${list_webp_lossy[@]}"
   #BPG Lossy
-  export -f bpg_lossy
-  parallel --will-cite --load 100%   -k 'bpg_lossy {1}' ::: "${list_bpg[@]}"
+  export -f bpg_lossy_test
+  parallel --will-cite --load 100%   -k 'bpg_lossy_test {1}' ::: "${list_bpg[@]}"
   #BPG Lossy JCTVC
-  export -f bpg_lossy_jctvc
-  parallel --will-cite --load 100%   -k 'bpg_lossy_jctvc {1}' ::: "${list_bpg_jctvc[@]}"
+  export -f bpg_lossy_jctvc_test
+  parallel --will-cite --load 100%   -k 'bpg_lossy_jctvc_test {1}' ::: "${list_bpg_jctvc[@]}"
   #Flif lossy
-  export -f flif_lossy
-  parallel --will-cite --load 100%   -k 'flif_lossy {1}' ::: "${list_flif_lossy[@]}"
+  export -f flif_lossy_test
+  parallel --will-cite --load 100%   -k 'flif_lossy_test {1}' ::: "${list_flif_lossy[@]}"
   #Pik
   export -f pik_test
   parallel --will-cite --load 100%   -k 'pik_test {1}' ::: "${list_pik[@]}"  
