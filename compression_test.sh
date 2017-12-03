@@ -223,7 +223,7 @@ function plotcsv_graph_ssimulacra
 	plot "pik-$2.csv" using 3:5 w l ls 1 title 'pik', \
     	"libjpeg-$2.csv" using 3:5 w l ls 2 title 'libjpeg', \
 	"libjpeg2000-$2.csv" using 3:5 w l ls 3 title 'OpenJPEG(JPEG 2000)', \
-    	"guetzli-$2.csv" using 3:5 w l ls 4 title 'guetzli', \
+   	"guetzli-$2.csv" using 3:5 w l ls 4 title 'guetzli', \
     	"flif_lossy-$2.csv" using 3:5 w l ls 5 title 'flif-lossy', \
 	"bpg-$2.csv" using 3:5 w l ls 6 title 'bpg(x265)', \
 	"bpg_jctvc-$2.csv" using 3:5 w l ls 7 title 'bpg(jctvc)', \
@@ -249,7 +249,7 @@ function plotcsv_graph_merge
     	set style line 8 lt 1 lw 2 lc rgb '#F67A4E' ps 0 # orange
 	set style line 9 lt 1 lw 2 lc rgb '#09B460' ps 0 # dark green
 	set style line 10 lt 1 lw 2 lc rgb '#EFEF3A' ps 0 # yellow
-   	set style line 11 lt 1 lw 2 lc rgb '#A6F687' ps 0 # light green
+    	set style line 11 lt 1 lw 2 lc rgb '#A6F687' ps 0 # light green
 	set style line 12 lt 1 lw 2 lc rgb '#FBE5BC' ps 0 # light brown
     	set tics nomirror
 	set ytics 1
@@ -287,17 +287,17 @@ function plotcsv_graph_ssimulacra_merge
     	set style line 6 lt 1 lw 2 lc rgb '#08D8DD' ps 0 # cyan
     	set style line 7 lt 1 lw 2 lc rgb '#A90B3C' ps 0 # brown
     	set style line 8 lt 1 lw 2 lc rgb '#F67A4E' ps 0 # orange
-    	set style line 9 lt 1 lw 2 lc rgb '#09B460' ps 0 # dark green
-    	set style line 10 lt 1 lw 2 lc rgb '#EFEF3A' ps 0 # yellow
+	set style line 9 lt 1 lw 2 lc rgb '#09B460' ps 0 # dark green
+	set style line 10 lt 1 lw 2 lc rgb '#EFEF3A' ps 0 # yellow
     	set style line 11 lt 1 lw 2 lc rgb '#A6F687' ps 0 # light green
-    	set style line 12 lt 1 lw 2 lc rgb '#FBE5BC' ps 0 # light brown
-        set tics nomirror
+	set style line 12 lt 1 lw 2 lc rgb '#FBE5BC' ps 0 # light brown
+    	set tics nomirror
 	set ytics 0.01
 	set mytics 10
-        set output "$1"
+    	set output "$1"
 	set title  "$2" noenhanced
-        set xlabel 'Bits per pixel(bpp)'
-        set ylabel 'ssimulacra score'
+    	set xlabel 'Bits per pixel(bpp)'
+    	set ylabel 'ssimulacra score'
 	set datafile separator ","
 	set xtics font ", 12"
 	set xrange [:8]
@@ -614,6 +614,10 @@ function libjpeg_test
 {
   x="$1"
   filename=$(basename "$x")
+  width=$(identify -format "%w" "$x")
+  height=$(identify -format "%h" "$x")
+  orig_size=$(wc -c < "$x")
+  orig_size_bpp=$(convert_to_bpp "$orig_size" "$width" "$height")
   echo "Analysing JPEGs optimized by LibJPEG[Source :$x]"
   rm -rf libjpeg-"$filename".csv
   #Start csv generation
@@ -631,6 +635,10 @@ function av1_test
 {
   x="$1"
   filename=$(basename "$x")
+  width=$(identify -format "%w" "$x")
+  height=$(identify -format "%h" "$x")
+  orig_size=$(wc -c < "$x")
+  orig_size_bpp=$(convert_to_bpp "$orig_size" "$width" "$height")
   echo "Analysing images optimized by AV1"
   rm -rf av1-"$filename".csv "$x".y4m
   ffmpeg -nostats -loglevel 0 -y -i  "$x" -pix_fmt yuv444p10le -strict -2 "$x".y4m
@@ -649,6 +657,10 @@ function libjpeg_2000_test
 {
   x="$1"
   filename=$(basename "$x")
+  width=$(identify -format "%w" "$x")
+  height=$(identify -format "%h" "$x")
+  orig_size=$(wc -c < "$x")
+  orig_size_bpp=$(convert_to_bpp "$orig_size" "$width" "$height")
   echo "Analysing JPEG 2000 images optimized by OpenJPEG(JPEG 2000)[Source :$x]"
   rm -rf libjpeg2000-"$filename".csv
   #Start csv generation
@@ -664,6 +676,10 @@ function guetzli_test
 {
   x="$1"
   filename=$(basename "$x")
+  width=$(identify -format "%w" "$x")
+  height=$(identify -format "%h" "$x")
+  orig_size=$(wc -c < "$x")
+  orig_size_bpp=$(convert_to_bpp "$orig_size" "$width" "$height")
   echo "Analysing JPEGs optimized by Guetzli[Source :$x]"
   rm -rf guetzli-"$filename".csv
 #Start csv generation
@@ -679,6 +695,10 @@ function mozjpeg_test
 {
   x="$1"
   filename=$(basename "$x")
+  width=$(identify -format "%w" "$x")
+  height=$(identify -format "%h" "$x")
+  orig_size=$(wc -c < "$x")
+  orig_size_bpp=$(convert_to_bpp "$orig_size" "$width" "$height")
   echo "Analysing JPEGs optimized by MozJPEG[Source :$x]"
   rm -rf mozjpeg-"$filename".csv
   #Start csv generation
@@ -694,6 +714,10 @@ function pik_test
 {
   x="$1"
   filename=$(basename "$x")
+  width=$(identify -format "%w" "$x")
+  height=$(identify -format "%h" "$x")
+  orig_size=$(wc -c < "$x")
+  orig_size_bpp=$(convert_to_bpp "$orig_size" "$width" "$height")
   echo "Analysing Pik images(This will take a while...BE patient)[Source :$x]"
   rm -rf pik-"$filename".csv
 #Start csv generation
@@ -709,6 +733,10 @@ function webp_near_lossless
 {
   x="$1"
   filename=$(basename "$x")
+  width=$(identify -format "%w" "$x")
+  height=$(identify -format "%h" "$x")
+  orig_size=$(wc -c < "$x")
+  orig_size_bpp=$(convert_to_bpp "$orig_size" "$width" "$height")
   echo "Analysing Webp images(Near Lossless)[Source :$x]"
   rm -rf webp-"$filename".csv
 #Start csv generation
@@ -724,6 +752,10 @@ function webp_lossy
 {
   x="$1"
   filename=$(basename "$x")
+  width=$(identify -format "%w" "$x")
+  height=$(identify -format "%h" "$x")
+  orig_size=$(wc -c < "$x")
+  orig_size_bpp=$(convert_to_bpp "$orig_size" "$width" "$height")
   echo "Analysing Webp images(Lossy)[Source :$x]"
   rm -rf webp_lossy-"$filename".csv
 #Start csv generation
@@ -739,6 +771,10 @@ function bpg_lossy
 {
   x="$1"
   filename=$(basename "$x")
+  width=$(identify -format "%w" "$x")
+  height=$(identify -format "%h" "$x")
+  orig_size=$(wc -c < "$x")
+  orig_size_bpp=$(convert_to_bpp "$orig_size" "$width" "$height")
   echo "Analysing BPG images(x265 encoder - lossy)[Source :$x]"
   rm -rf bpg-"$filename".csv
   #Start csv generation
@@ -754,6 +790,10 @@ function bpg_lossy_jctvc
 {
   x="$1"
   filename=$(basename "$x")
+  width=$(identify -format "%w" "$x")
+  height=$(identify -format "%h" "$x")
+  orig_size=$(wc -c < "$x")
+  orig_size_bpp=$(convert_to_bpp "$orig_size" "$width" "$height")
   echo "Analysing BPG images(jctvc encoder - lossy)[Source :$x]"
   rm -rf bpg_jctvc-"$filename".csv
   #Start csv generation
@@ -769,6 +809,10 @@ function flif_lossy
 {
   x="$1"
   filename=$(basename "$x")
+  width=$(identify -format "%w" "$x")
+  height=$(identify -format "%h" "$x")
+  orig_size=$(wc -c < "$x")
+  orig_size_bpp=$(convert_to_bpp "$orig_size" "$width" "$height")
   echo "Analysing FLIF images(Lossy)[Source :$x]"
   rm -rf flif_lossy-"$filename".csv
   #Start csv generation
@@ -1114,9 +1158,6 @@ function main
   #MozJPEG
   export -f mozjpeg_test
   parallel --will-cite --load 100%   -k 'mozjpeg_test {1}' ::: "${list_mozjpeg[@]}"
-  #Pik
-  export -f pik_test
-  parallel --will-cite --load 100%   -k 'pik_test {1}' ::: "${list_pik[@]}"
   #Webp
   export -f webp_near_lossless
   parallel --will-cite --load 100%   -k 'webp_near_lossless {1}' ::: "${list_webp[@]}"
@@ -1131,7 +1172,10 @@ function main
   parallel --will-cite --load 100%   -k 'bpg_lossy_jctvc {1}' ::: "${list_bpg_jctvc[@]}"
   #Flif lossy
   export -f flif_lossy
-  parallel --will-cite --load 100%   -k 'flif_lossy {1}' ::: "${list_flif_lossy[@]}"  
+  parallel --will-cite --load 100%   -k 'flif_lossy {1}' ::: "${list_flif_lossy[@]}"
+  #Pik
+  export -f pik_test
+  parallel --will-cite --load 100%   -k 'pik_test {1}' ::: "${list_pik[@]}"  
   #AV1
   export -f av1_test
   parallel --will-cite --load 100%   -k 'av1_test {1}' ::: "${list_av1[@]}"
@@ -1150,8 +1194,8 @@ function main
     #plot the graphs
     echo "Generating the plots[Source :$x]"
     rm -rf "$filename"_butteraugli_plot.png "$filename"_ssimulacra_plot.png
-    reference_jpg_size=$(wc -c < "$filename"_libjpeg_reference.jpg)
-    reference_jpg_bpp=$(convert_to_bpp "$reference_jpg_size")
+	reference_jpg_size=$(wc -c < "$filename"_libjpeg_reference.jpg)
+	reference_jpg_bpp=$(convert_to_bpp "$reference_jpg_size")
     plotcsv_graph "$filename"_butteraugli_plot.png "$filename"  "Source: $filename"
     plotcsv_graph_ssimulacra "$filename"_ssimulacra_plot.png  "$filename" "Source: $filename"
     files_to_zip+=("libjpeg-${filename}.csv" "libjpeg2000-${filename}.csv" "guetzli-${filename}.csv" "pik-${filename}.csv" "av1-${filename}.csv" "webp-${filename}.csv" "webp_lossy-${filename}.csv"  "bpg-${filename}.csv" "flif_lossy-${filename}.csv" "mozjpeg-${filename}.csv" "bpg_jctvc-${filename}.csv" "${filename}_butteraugli_plot.png" "${filename}_ssimulacra_plot.png")
