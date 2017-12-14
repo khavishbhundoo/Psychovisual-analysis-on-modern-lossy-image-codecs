@@ -6,8 +6,7 @@
 # License : MIT                                     #
 # Performs compression tests using multiple encoders#
 #####################################################
-ulimit -s unlimited
-#TODO : Add --no-parallel option
+
 #Check if a command line tool is installed on the server
 function exists()
 {
@@ -35,6 +34,7 @@ function usage()
   echo "--heatmap_target_size=SIZE  Generate butteraugli heatmaps for a compressed image just above SIZE for each encoder"
   echo "--only-image-generation     Only generate compressed images + the csv files for various codecs and exit"
   #echo "--path=/path/goes/here 	Use all png images in directory as source(no trailing / )" #TODO
+  #echo "--no-gnu-parallel          Do not use gnu-parallel  #TODO
   echo "--force-image-generation    Regenerate compressed images + the csv files even if csv files already exist(use with --combine-plots)"
   exit 1
 
@@ -196,7 +196,7 @@ EOFMarker
 function plotcsv_graph_ssimulacra
 {
   gnuplot -persist <<-EOFMarker
-    	set terminal pngcairo size 1280,1024 enhanced font "Helvetica,20"
+    set terminal pngcairo size 1280,1024 enhanced font "Helvetica,20"
 	set style line 1 lt 1 lw 2 lc rgb '#00707A' ps 0 # dark green
     	set style line 2 lt 1 lw 2 lc rgb '#8710A8' ps 0 # purple
     	set style line 3 lt 1 lw 2 lc rgb '#005ACB' ps 0 # dark blue
@@ -243,10 +243,10 @@ function plotcsv_graph_merge
     	set style line 2 lt 1 lw 2 lc rgb '#8710A8' ps 0 # purple
     	set style line 3 lt 1 lw 2 lc rgb '#005ACB' ps 0 # dark blue
     	set style line 4 lt 1 lw 2 lc rgb '#099BFC' ps 0 # light blue
-    	set style line 5 lt 1 lw 2 lc rgb '#FF75FE' ps 0 # pink
+   	set style line 5 lt 1 lw 2 lc rgb '#FF75FE' ps 0 # pink
     	set style line 6 lt 1 lw 2 lc rgb '#08D8DD' ps 0 # cyan
     	set style line 7 lt 1 lw 2 lc rgb '#A90B3C' ps 0 # brown
-   	set style line 8 lt 1 lw 2 lc rgb '#F67A4E' ps 0 # orange
+    	set style line 8 lt 1 lw 2 lc rgb '#F67A4E' ps 0 # orange
 	set style line 9 lt 1 lw 2 lc rgb '#09B460' ps 0 # dark green
 	set style line 10 lt 1 lw 2 lc rgb '#EFEF3A' ps 0 # yellow
     	set style line 11 lt 1 lw 2 lc rgb '#A6F687' ps 0 # light green
@@ -315,8 +315,6 @@ function plotcsv_graph_ssimulacra_merge
 EOFMarker
 }
 #######################################Handler functions START ###########################################################
-
-
 
 function av1_generation_handler
 {
@@ -610,6 +608,8 @@ export -f convert_to_bpp libjpeg_generation_handler av1_generation_handler libjp
 
 #################################Handler functions END ################################################################
 
+#################################Test functions START ##################################################################
+
 function libjpeg_test
 {
   x="$1"
@@ -624,7 +624,7 @@ function libjpeg_test
   echo "Test_Image,Original_Size(bytes),Original_Size(bpp)" >> libjpeg-"$filename".csv
   echo "$filename","$orig_size","$orig_size_bpp" >> libjpeg-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> libjpeg-"$filename".csv
-  parallel --will-cite  --load 100%   -k 'libjpeg_generation_handler {1} {2}' ::: {100..70} ::: "$x"
+  parallel --will-cite  --load 100%  --delay 0.1 -k 'libjpeg_generation_handler {1} {2}' ::: {100..70} ::: "$x"
   { head -n3 libjpeg-"$filename".csv; tail -n +4 libjpeg-"$filename".csv | sort -k1,1 -r -n -t,; } >libjpeg-"$filename".tmp && mv libjpeg-"$filename".tmp libjpeg-"$filename".csv
 #End csv generation
 }
@@ -646,7 +646,7 @@ function av1_test
   echo "Test_Image,Original_Size(bytes),Original_Size(bpp)" >> av1-"$filename".csv
   echo "$filename","$orig_size","$orig_size_bpp" >> av1-"$filename".csv
   echo "Quality(cq-level),Flatness(qm-min),Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> av1-"$filename".csv
-  parallel --will-cite --load 100%  -k  'av1_generation_handler {1} {2} {3}' ::: {10..40..2} ::: {4..12..2} ::: "$x"
+  parallel --will-cite --load 100%  -k --delay 0.1 'av1_generation_handler {1} {2} {3}' ::: {10..40..2} ::: {4..12..2} ::: "$x"
   { head -n3 av1-"$filename".csv; tail -n +4 av1-"$filename".csv | sort -k1,1 -k2,2 -n  -t,; } >av1-"$filename".tmp && mv av1-"$filename".tmp av1-"$filename".csv
 #End csv generation
 }
@@ -667,7 +667,7 @@ function libjpeg_2000_test
   echo "Test_Image,Original_Size,Original_Size(bpp)" >> libjpeg2000-"$filename".csv
   echo "$filename","$orig_size","$orig_size_bpp" >> libjpeg2000-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> libjpeg2000-"$filename".csv
-  parallel --will-cite --load 100%  -k 'libjpeg_2000_generation_handler {1} {2}' ::: {0..25} ::: "$x"
+  parallel --will-cite --load 100% --delay 0.1  -k 'libjpeg_2000_generation_handler {1} {2}' ::: {0..25} ::: "$x"
   { head -n3 libjpeg2000-"$filename".csv; tail -n +4 libjpeg2000-"$filename".csv | sort -k1,1  -n -t,; } >libjpeg2000-"$filename".tmp && mv libjpeg2000-"$filename".tmp libjpeg2000-"$filename".csv
 #End csv generation
 }
@@ -686,7 +686,7 @@ function guetzli_test
   echo "Test_Image,Original_Size,Original_Size(bpp)" >> guetzli-"$filename".csv
   echo "$filename","$orig_size","$orig_size_bpp" >> guetzli-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> guetzli-"$filename".csv
-  parallel --will-cite --load 100%  -k  'guetzli_generation_handler {1} {2}' ::: {100..84} ::: "$x"
+  parallel --will-cite --load 100% --delay 0.1 -k  'guetzli_generation_handler {1} {2}' ::: {100..84} ::: "$x"
   { head -n3 guetzli-"$filename".csv; tail -n +4 guetzli-"$filename".csv | sort -k1,1 -r -n -t,; } >guetzli-"$filename".tmp && mv guetzli-"$filename".tmp guetzli-"$filename".csv
 #End csv generation
 }
@@ -705,7 +705,7 @@ function mozjpeg_test
   echo "Test_Image,Original_Size,Original_Size(bpp)" >> mozjpeg-"$filename".csv
   echo "$filename","$orig_size","$orig_size_bpp" >> mozjpeg-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> mozjpeg-"$filename".csv
-  parallel --will-cite --load 100%  -k  'mozjpeg_generation_handler {1} {2}' ::: {100..70} ::: "$x"
+  parallel --will-cite --load 100% --delay 0.1 -k  'mozjpeg_generation_handler {1} {2}' ::: {100..70} ::: "$x"
   { head -n3 mozjpeg-"$filename".csv; tail -n +4 mozjpeg-"$filename".csv | sort -k1,1 -r -n -t,; } >mozjpeg-"$filename".tmp && mv mozjpeg-"$filename".tmp mozjpeg-"$filename".csv
 #End csv generation
 }
@@ -724,7 +724,7 @@ function pik_test
   echo "Test_Image,Original_Size,Original_Size(bpp)" >> pik-"$filename".csv
   echo "$filename","$orig_size","$orig_size_bpp" >> pik-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> pik-"$filename".csv
-  parallel --will-cite --load 100%  -k  'pik_generation_handler {1} {2}' ::: $(seq 0.5 0.1 3.0)
+  parallel --will-cite --load 100%  --delay 0.1 -k  'pik_generation_handler {1} {2}' ::: $(seq 0.5 0.1 3.0) ::: "$x"
   { head -n3 pik-"$filename".csv; tail -n +4 pik-"$filename".csv | sort -k1,1  -n -t,; } >pik-"$filename".tmp && mv pik-"$filename".tmp pik-"$filename".csv
 #End csv generation
 }
@@ -743,7 +743,7 @@ function webp_near_lossless_test
   echo "Test_Image,Original_Size,Original_Size(bpp)" >> webp-"$filename".csv
   echo "$filename","$orig_size","$orig_size_bpp" >> webp-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> webp-"$filename".csv
-  parallel --will-cite --load 100%  -k 'webp_near_lossless_handler {1} {2}' ::: 60 40 ::: "$x"
+  parallel --will-cite --load 100% --delay 0.1 -k 'webp_near_lossless_handler {1} {2}' ::: 60 40 ::: "$x"
   { head -n3 webp-"$filename".csv; tail -n +4 webp-"$filename".csv | sort -k1,1 -r -n -t,; } >webp-"$filename".tmp && mv webp-"$filename".tmp webp-"$filename".csv
 #End csv generation
 }
@@ -762,7 +762,7 @@ function webp_lossy_test
   echo "Test_Image,Original_Size,Original_Size(bpp)" >> webp_lossy-"$filename".csv
   echo "$filename","$orig_size","$orig_size_bpp" >> webp_lossy-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> webp_lossy-"$filename".csv
-  parallel --will-cite --load 100%  -k  'webp_lossy_handler {1} {2}' ::: {100..70} ::: "$x"
+  parallel --will-cite --load 100% --delay 0.1  -k  'webp_lossy_handler {1} {2}' ::: {100..70} ::: "$x"
   { head -n3 webp_lossy-"$filename".csv; tail -n +4 webp_lossy-"$filename".csv | sort -k1,1 -r -n -t,; } >webp_lossy-"$filename".tmp && mv webp_lossy-"$filename".tmp webp_lossy-"$filename".csv
 #End csv generation
 }
@@ -781,7 +781,7 @@ function bpg_lossy_test
   echo "Test_Image,Original_Size,Original_Size(bpp)" >> bpg-"$filename".csv
   echo "$filename","$orig_size","$orig_size_bpp" >> bpg-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> bpg-"$filename".csv
-  parallel --will-cite --load 100%  -k  'bpg_lossy_handler {1} {2}' ::: {0..37} ::: "$x"
+  parallel --will-cite --load 100% --delay 0.1 -k  'bpg_lossy_handler {1} {2}' ::: {0..37} ::: "$x"
   { head -n3 bpg-"$filename".csv; tail -n +4 bpg-"$filename".csv | sort -k1,1  -n -t,; } >bpg-"$filename".tmp && mv bpg-"$filename".tmp bpg-"$filename".csv
 #End csv generation
 }
@@ -800,7 +800,7 @@ function bpg_lossy_jctvc_test
   echo "Test_Image,Original_Size,Original_Size(bpp)" >> bpg_jctvc-"$filename".csv
   echo "$filename","$orig_size","$orig_size_bpp" >> bpg_jctvc-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> bpg_jctvc-"$filename".csv
-  parallel --will-cite --load 100%  -k 'bpg_lossy_jctvc_handler {1} {2}' ::: {0..37} ::: "$x"
+  parallel --will-cite --load 100% --delay 0.1 -k 'bpg_lossy_jctvc_handler {1} {2}' ::: {0..37} ::: "$x"
   { head -n3 bpg_jctvc-"$filename".csv; tail -n +4 bpg_jctvc-"$filename".csv | sort -k1,1 -n -t,; } >bpg_jctvc-"$filename".tmp && mv bpg_jctvc-"$filename".tmp bpg_jctvc-"$filename".csv
   #End csv generation
 }
@@ -819,19 +819,55 @@ function flif_lossy_test
   echo "Test_Image,Original_Size,Original_Size(bpp)" >> flif_lossy-"$filename".csv
   echo "$filename","$orig_size","$orig_size_bpp" >> flif_lossy-"$filename".csv
   echo "Quality,Size(bytes),Size(bpp),Butteraugli,Ssimulacra,Compression Rate(%),Reference Compression Rate(%)" >> flif_lossy-"$filename".csv
-  parallel --will-cite --load 100%  -k  'flif_lossy_handler {1} {2}' ::: {100..0} ::: "$x"
+  parallel --will-cite --load 100% --delay 0.1 -k  'flif_lossy_handler {1} {2}' ::: {100..0} ::: "$x"
   { head -n3 flif_lossy-"$filename".csv; tail -n +4 flif_lossy-"$filename".csv | sort -k1,1 -r -n -t,; } >flif_lossy-"$filename".tmp && mv flif_lossy-"$filename".tmp flif_lossy-"$filename".csv
   #End csv generation
 }
 
+#################################Test functions END ##################################################################
+
+#Performs operations that are needed only once for all input images BEFORE image generation starts
 function global_operations
 {
-x="$1"
-filename=$(basename "$x")
-convert "$x" "$x".ppm # libjpeg will require ppm file as input
-jpeg -q 93 -oz -h -qt 3 -qv "$x".ppm "$filename"_libjpeg_reference.jpg &> /dev/null
+  x="$1"
+  filename=$(basename "$x")
+#if original image is not sRGB , convert the colorspace to sRGB so that ssimulacra can work fine
+  colorspace=$(identify -format "%[colorspace]" "$x")
+  if [ "$colorspace" != "sRGB" ]; then
+    convert "$x" -define png:color-type=2 "$x"
+  fi
+#
+  if [ ! -e "$filename".ppm ] || [ ! -e  "$filename"_libjpeg_reference.jpg ]; then
+    convert "$x" "$x".ppm # libjpeg will require ppm file as input
+    jpeg -q 93 -oz -h -qt 3 -qv "$x".ppm "$filename"_libjpeg_reference.jpg &> /dev/null
+  fi
 }
 
+
+#Generate individual plots in parallel
+function generate_single_plots
+{
+  filename="$1"
+  echo "Generating the plots[Source :$x]"
+  rm -rf "$filename"_butteraugli_plot.png "$filename"_ssimulacra_plot.png
+  reference_jpg_size=$(wc -c < "$filename"_libjpeg_reference.jpg)
+  reference_jpg_bpp=$(convert_to_bpp "$reference_jpg_size")
+  plotcsv_graph "$filename"_butteraugli_plot.png "$filename"  "Source: $filename"
+  plotcsv_graph_ssimulacra "$filename"_ssimulacra_plot.png  "$filename" "Source: $filename"
+}
+
+# As its nsmae suggest this is the function that get called first when the script is run
+# The flow is as follows
+# 1.Performs some basic validations
+# 2.Process the flags
+# 3.The image generation is as follows (for each image)
+#	 - The main functions call the _test functions which are responsible for preparing the csv files
+#    - The _test functions call the corresponding _handler functions which are responsible for doing the conversions
+# 4.Generate butteraugli and ssimulacra single plots for each image
+# 5.Generate merge plots if needed
+# 6.Generate comparison csv for each image if needed
+# 7.Generate the zip file
+# 8.Exit
 function main
 {
 
@@ -974,12 +1010,12 @@ function main
         only_image_generation=true
         continue
       fi
-	  
-	  if [ "$x" == "--force-image-generation" ]; then
+
+      if [ "$x" == "--force-image-generation" ]; then
         force_image_generation=true
         continue
       fi
-	  
+
     done
 
     if [ "$target_size" -gt 0 ]; then
@@ -995,15 +1031,15 @@ function main
     fi
 
   fi
-  
-  
+
+
   image_list=()
   for x in "$@"; do
     #skip if we are not dealing with an image
     if [ "${x: 0:2}" == "--" ]; then
       continue
     fi
-	image_list+=("$x")
+    image_list+=("$x")
   done
 
   image_count=0
@@ -1019,15 +1055,20 @@ function main
   list_av1=()
   list_webp=()
   list_webp_lossy=()
+  list_global_operations=()
   for x in "$@"; do
     #skip if we are not dealing with an image
     if [ "${x: 0:2}" == "--" ]; then
       continue
     fi
-	
-	filename=$(basename "$x")
-	export only_csv
-	
+
+    filename=$(basename "$x")
+    export only_csv
+
+    if [ ! -e "$filename".ppm ] || [ ! -e  "$filename"_libjpeg_reference.jpg ]; then
+      list_global_operations+=("$x")
+    fi
+
     if [ "$only_libjpeg" = true ] || [ "$only_csv" = true ] || [ "$combine_plots" = true ] || [ "$has_options" = false ]; then
       if [ "$combine_plots" = true ] && [ -e "libjpeg-$filename.csv" ] && [ "$only_csv" = false ] && [ "$force_image_generation" = false ]; then
         #Do nothing
@@ -1143,46 +1184,92 @@ function main
 
   #Perform the image generation with each encoder in turn
   #This ensures maximum usage of the CPU for slow encoders i.e guetzli and av1
-  
 
-  export -f global_operations
-  #no need to add delay here as we perform just a single operations for every image
-  parallel --will-cite --load 100%   -k 'global_operations {1}' ::: "${image_list[@]}"
-  
+  if [[ "${list_global_operations[@]}" ]]; then
+    export -f global_operations
+    parallel --will-cite --load 100% -k 'global_operations {1}' ::: "${image_list[@]}"
+    sleep 1
+  fi
+
   #LibJPEG
-  export -f libjpeg_test
-  parallel --will-cite --load 100%   -k 'libjpeg_test {1}' ::: "${list_libjpeg[@]}"
+  if [[ "${list_libjpeg[@]}" ]]; then
+    export -f libjpeg_test
+    parallel --will-cite --load 100%  -k 'libjpeg_test {1}' ::: "${list_libjpeg[@]}"
+    sleep 1
+  fi
+
   #OpenJPEG
-  export -f libjpeg_2000_test
-  parallel --will-cite --load 100%   -k 'libjpeg_2000_test {1}' ::: "${list_libjpeg2000[@]}"
+  if [[ "${list_libjpeg2000[@]}" ]]; then
+    export -f libjpeg_2000_test
+    parallel --will-cite --load 100%   -k 'libjpeg_2000_test {1}' ::: "${list_libjpeg2000[@]}"
+    sleep 1
+  fi
+
   #MozJPEG
-  export -f mozjpeg_test
-  parallel --will-cite --load 100%   -k 'mozjpeg_test {1}' ::: "${list_mozjpeg[@]}"
+  if [[ "${list_mozjpeg[@]}" ]]; then
+    export -f mozjpeg_test
+    parallel --will-cite --load 100%   -k 'mozjpeg_test {1}' ::: "${list_mozjpeg[@]}"
+    sleep 1
+  fi
+
   #Webp
-  export -f webp_near_lossless_test
-  parallel --will-cite --load 100%   -k 'webp_near_lossless_test {1}' ::: "${list_webp[@]}"
+  if [[ "${list_webp[@]}" ]]; then
+    export -f webp_near_lossless_test
+    parallel --will-cite --load 100%  -k 'webp_near_lossless_test {1}' ::: "${list_webp[@]}"
+    sleep 1
+  fi
+
+
   #Webp lossy
-  export -f webp_lossy_test
-  parallel --will-cite --load 100%   -k 'webp_lossy_test {1}' ::: "${list_webp_lossy[@]}"
+  if [[ "${list_webp_lossy[@]}" ]]; then
+    export -f webp_lossy_test
+    parallel --will-cite --load 100%   -k 'webp_lossy_test {1}' ::: "${list_webp_lossy[@]}"
+    sleep 1
+  fi
+
   #BPG Lossy
-  export -f bpg_lossy_test
-  parallel --will-cite --load 100%   -k 'bpg_lossy_test {1}' ::: "${list_bpg[@]}"
+  if [[ "${list_bpg[@]}" ]]; then
+    export -f bpg_lossy_test
+    parallel --will-cite --load 100%   -k 'bpg_lossy_test {1}' ::: "${list_bpg[@]}"
+    sleep 1
+  fi
+
+
   #BPG Lossy JCTVC
-  export -f bpg_lossy_jctvc_test
-  parallel --will-cite --load 100%   -k 'bpg_lossy_jctvc_test {1}' ::: "${list_bpg_jctvc[@]}"
+  if [[ "${list_bpg_jctvc[@]}" ]]; then
+    export -f bpg_lossy_jctvc_test
+    parallel --will-cite --load 100%    -k 'bpg_lossy_jctvc_test {1}' ::: "${list_bpg_jctvc[@]}"
+    sleep 1
+  fi
+
   #Flif lossy
-  export -f flif_lossy_test
-  parallel --will-cite --load 100%   -k 'flif_lossy_test {1}' ::: "${list_flif_lossy[@]}"
+  if [[ "${list_flif_lossy[@]}" ]]; then
+    export -f flif_lossy_test
+    parallel --will-cite --load 100%    -k 'flif_lossy_test {1}' ::: "${list_flif_lossy[@]}"
+    sleep 1
+  fi
+
   #Pik
-  export -f pik_test
-  parallel --will-cite --load 100%   -k 'pik_test {1}' ::: "${list_pik[@]}"  
+  if [[ "${list_pik[@]}" ]]; then
+    export -f pik_test
+    parallel --will-cite --load 100%   -k 'pik_test {1}' ::: "${list_pik[@]}"
+    sleep 1
+  fi
+
   #AV1
-  export -f av1_test
-  parallel --will-cite --load 100%   -k 'av1_test {1}' ::: "${list_av1[@]}"
+  if [[ "${list_av1[@]}" ]]; then
+    export -f av1_test
+    parallel --will-cite --load 100%   -k 'av1_test {1}' ::: "${list_av1[@]}"
+    sleep 1
+  fi
+
   #Guetzli
-  export -f guetzli_test
-  parallel --will-cite --load 100%   -k 'guetzli_test {1}' ::: "${list_guetzli[@]}"
-  
+  if [[ "${list_guetzli[@]}" ]]; then
+    export -f guetzli_test
+    parallel --will-cite --load 100%   -k 'guetzli_test {1}' ::: "${list_guetzli[@]}"
+    sleep 1
+  fi
+
   #Image generation should be done at this point
   #Global operations after image generations happens here
   for x in "$@"; do
@@ -1191,13 +1278,18 @@ function main
     fi
     image_count=$(( image_count + 1 ))
     filename=$(basename "$x")
-    #plot the graphs
-    echo "Generating the plots[Source :$x]"
-    rm -rf "$filename"_butteraugli_plot.png "$filename"_ssimulacra_plot.png
-	reference_jpg_size=$(wc -c < "$filename"_libjpeg_reference.jpg)
-	reference_jpg_bpp=$(convert_to_bpp "$reference_jpg_size")
-    plotcsv_graph "$filename"_butteraugli_plot.png "$filename"  "Source: $filename"
-    plotcsv_graph_ssimulacra "$filename"_ssimulacra_plot.png  "$filename" "Source: $filename"
+    # #plot the graphs
+    # echo "Generating the plots[Source :$x]"
+    # rm -rf "$filename"_butteraugli_plot.png "$filename"_ssimulacra_plot.png
+    # reference_jpg_size=$(wc -c < "$filename"_libjpeg_reference.jpg)
+    # reference_jpg_bpp=$(convert_to_bpp "$reference_jpg_size")
+    # plotcsv_graph "$filename"_butteraugli_plot.png "$filename"  "Source: $filename"
+    # plotcsv_graph_ssimulacra "$filename"_ssimulacra_plot.png  "$filename" "Source: $filename"
+
+    #Generate plots in parallel
+    export -f generate_single_plots
+    parallel --will-cite --load 100% -k 'generate_single_plots {1}' ::: "${image_list[@]}"
+    #
     files_to_zip+=("libjpeg-${filename}.csv" "libjpeg2000-${filename}.csv" "guetzli-${filename}.csv" "pik-${filename}.csv" "av1-${filename}.csv" "webp-${filename}.csv" "webp_lossy-${filename}.csv"  "bpg-${filename}.csv" "flif_lossy-${filename}.csv" "mozjpeg-${filename}.csv" "bpg_jctvc-${filename}.csv" "${filename}_butteraugli_plot.png" "${filename}_ssimulacra_plot.png")
     list_pik_csv+=("pik-${filename}.csv")
     list_libjpeg_csv+=("libjpeg-${filename}.csv")
@@ -1214,9 +1306,10 @@ function main
 
   #Create merge plots if needed
   if [ "$combine_plots" = true ]; then
+    echo "Merging results to create merge plots...."
     rm -rf pik-merge.csv libjpeg-merge.csv libjpeg2000-merge.csv guetzli-merge.csv flif_lossy-merge.csv bpg-merge.csv bpg_jctvc-merge.csv mozjpeg-merge.csv mozjpeg-merge.csv av1-merge.csv webp-merge.csv webp_lossy-merge.csv butteraugli_plot_merge.png ssimulacra_merge ssimulacra_plot_merge.png
     #Create the merge csv
-    tail -q -n +4  "${list_pik_csv[@]}" | datamash -st, -g1 mean 3  mean 4 mean 5 | awk -F , '{printf ("%s,%.2f,%.6f,%.8f\n",$1,$2,$3,$4)}'  &> pik-merge.csv
+    tail -q -n +4  "${list_pik_csv[@]}" | datamash -st, -g1 mean 3  mean 4 mean 5 | awk -F , '{printf ("%s,%.2f,%.6f,%.8f\n",$1,$2,$3,$4)}' | sort -k1,1 -r -n -t, &> pik-merge.csv
     tail -q -n +4  "${list_libjpeg_csv[@]}" | datamash -st, -g1 mean 3  mean 4 mean 5 | awk -F , '{printf ("%s,%.2f,%.6f,%.8f\n",$1,$2,$3,$4)}' |  sort -k1,1 -r -n -t, &> libjpeg-merge.csv
     tail -q -n +4  "${list_libjpeg2000_csv[@]}" | datamash -st, -g1 mean 3  mean 4 mean 5 | awk -F , '{printf ("%s,%.2f,%.6f,%.8f\n",$1,$2,$3,$4)}' | sort -k1,1 -r -n -t, &> libjpeg2000-merge.csv
     tail -q -n +4  "${list_guetzli_csv[@]}" | datamash -st, -g1 mean 3  mean 4 mean 5 | awk -F , '{printf ("%s,%.2f,%.6f,%.8f\n",$1,$2,$3,$4)}' | sort -k1,1 -r -n -t, &> guetzli-merge.csv
@@ -1237,6 +1330,7 @@ function main
 
   #Generate heatmap + comparison csv if option is present
   #This is possible only for one image
+  #TODO Add parallelism for comparision csv
   if [ "$target_size" -gt 0 ] && [ "$image_count" -eq 1 ]; then
 
     echo "Generating heatmaps + comparision csv"
